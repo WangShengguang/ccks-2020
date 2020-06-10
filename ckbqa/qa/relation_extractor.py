@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
 
+import numpy as np
+
+from ckbqa.models.evaluate import RelationScorePredictor
 from ckbqa.qa.neo4j_graph import GraphDB
 from ckbqa.utils.decorators import singleton
 
@@ -10,7 +13,7 @@ class RelationExtractor(object):
 
     def __init__(self):
         self.graph_db = GraphDB()
-        # self.sim_predictor = RelationScorePredictor(model_name='bert_match')  # bert_match,bert_match2
+        self.sim_predictor = RelationScorePredictor(model_name='bert_match')  # bert_match,bert_match2
 
     def get_relations(self, candidate_entities, ent_name, direction='out'):
         onehop_relations = self.graph_db.get_onehop_relations_by_entName(ent_name, direction=direction)
@@ -31,6 +34,7 @@ class RelationExtractor(object):
     def get_ent_relations(self, q_text, candidate_entities):
         """
         :param q_text:
+        :top_k 10 ; out 10, in 10
         :param candidate_entities: {ent:[mention, feature1, feature2, ...]}
         :return:
         """
@@ -45,10 +49,29 @@ class RelationExtractor(object):
             candidate_in_paths.extend(candidate_paths)
         if not candidate_out_sents and not candidate_in_sents:
             logging.info('* candidate_out_paths Empty ...')
-            return
-        # TODO 模型打分
-        # sim_scores = self.sim_predictor.predict(q_text, candidate_out_paths) #目前算法不好，score==1
-        return candidate_out_paths, candidate_in_paths
+            return candidate_out_paths, candidate_in_paths
+        # 模型打分排序
+        _out_paths = self.relation_score_topn(q_text, candidate_out_paths, candidate_out_sents)
+        _in_paths = self.relation_score_topn(q_text, candidate_out_paths, candidate_out_sents)
+        return _out_paths, _in_paths
 
-    def relation_score_topn(self):
-        pass
+    def relation_score_topn(self, q_text, candidate_paths, candidate_sents, top_k=10):
+        top_k = len(candidate_sents)  # TODO 不做筛选，保留所有路径；目前筛选效果不好
+        if top_k >= len(candidate_sents):
+            return candidate_paths
+        if candidate_sents:
+            sim_scores = self.sim_predictor.predict(q_text, candidate_sents)  # 目前算法不好，score==1
+            sim_indexs = np.array(sim_scores).argsort()[-top_k:][::-1]
+            _paths = [candidate_paths[i] for i in sim_indexs]
+        else:
+            _paths = []
+        return _paths
+        # for i in in_sim_indexs:
+        #     try:
+        #         candidate_in_paths[i]
+        #     except:
+        #         import traceback
+        #         logging.info(traceback.format_exc())
+        #         print(f'i: {i}, candidate_in_paths: {len(candidate_in_paths)}')
+        #         import ipdb
+        #         ipdb.set_trace()

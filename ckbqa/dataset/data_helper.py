@@ -1,13 +1,13 @@
 import logging
+from typing import List
 
 import numpy as np
 import pandas as pd
 import torch
 from pytorch_transformers import BertTokenizer
-from typing import List
 
+from ckbqa.utils.decorators import singleton
 from ckbqa.utils.sequence import pad_sequences
-from ckbqa.utils.tools import singleton
 from config import Config
 
 

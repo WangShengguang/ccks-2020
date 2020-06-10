@@ -30,8 +30,8 @@ class BertMatch(nn.Module):
         logistic = self.fc(feature)
         if labels is None:
             output = self.soft_max(logistic)
-            pred = torch.argmax(output, dim=-1)
-            return pred
+            # pred = torch.argmax(output, dim=-1)
+            return output
         else:
             loss = self.loss(logistic, labels)
             return logistic, loss
@@ -62,8 +62,8 @@ class BertMatch2(nn.Module):
         logistic = self.fc2(feature1)
         if labels is None:
             output = self.soft_max(logistic)
-            pred = torch.argmax(output, dim=-1)
-            return pred
+            # pred = torch.argmax(output, dim=-1)
+            return output
         else:
             loss = self.loss(logistic, labels)
             return logistic, loss

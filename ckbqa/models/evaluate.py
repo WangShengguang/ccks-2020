@@ -28,18 +28,19 @@ class RelationScorePredictor(object):
 
     def iter_sample(self, q_text, sim_texts):
         batch_size = 32
-        q_sent_token_ids = [self.data_helper.sent2ids(q_text)
-                            for _ in range(min(batch_size, len(sim_texts)))]
-        q_tensors = self.data_helper.data2tensor(q_sent_token_ids)
+        q_ids = self.data_helper.sent2ids(q_text)
+        batch_q_sent_token_ids = [q_ids for _ in range(min(batch_size, len(sim_texts)))]
+        q_tensors = self.data_helper.data2tensor(batch_q_sent_token_ids)
         batch_sim_texts = [sim_texts[i:i + batch_size] for i in range(0, len(sim_texts), batch_size)]
         for batch_sim_text in batch_sim_texts:
             sim_sent_token_ids = [self.data_helper.sent2ids(sim_text) for sim_text in batch_sim_text]
             sim_tensors = self.data_helper.data2tensor(sim_sent_token_ids)
             yield q_tensors[:len(sim_tensors)], sim_tensors
 
-    def predict(self, q_text: List[str], sim_texts: List[str]):
+    def predict(self, q_text: str, sim_texts: List[str]):
         all_preds = []
         for q_tensors, sim_tensors in self.iter_sample(q_text, sim_texts):
             preds = self.model(q_tensors, sim_tensors)
+            preds = preds[:, 1]
             all_preds.extend(preds.tolist())
         return all_preds

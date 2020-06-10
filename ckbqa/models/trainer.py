@@ -39,19 +39,6 @@ class BaseTrainer(object):
         self.scheduler = LambdaLR(self.optimizer, lr_lambda=lambda epoch: 1 / (1 + 0.05 * epoch))
         return model
 
-    def get_model(self):
-        if self.model_name == 'bert_match':  # 20200607双层
-            model = BertMatch()
-            # model.bert
-        elif self.model_name == 'bert_match2':  # 20200607单层
-            model = BertMatch2()
-        else:
-            raise ValueError()
-        if hasattr(model, 'bert'):  # bert参数不训练
-            for para in model.bert.parameters():
-                para.requires_grad = False  # bert参数不训练
-        return model
-
 
 class Trainer(BaseTrainer):
     def __init__(self, model_name):
@@ -60,8 +47,18 @@ class Trainer(BaseTrainer):
         self.data_helper = DataHelper()
         self.saver = Saver(model_name=model_name)
 
-    def train(self):
-        model = self.get_model()
+    def train_match_model(self, mode='train'):
+        """
+        :mode: train,test
+        """
+        if self.model_name == 'bert_match':  # 单层
+            model = BertMatch()
+        elif self.model_name == 'bert_match2':  # 双层
+            model = BertMatch2()
+        else:
+            raise ValueError()
+        for para in model.bert.parameters():
+            para.requires_grad = False  # bert参数不训练
         model = self.init_model(model)
         model_path, epoch, step = self.saver.load_model(model, fail_ok=True)
         self.global_step = step
@@ -74,5 +71,9 @@ class Trainer(BaseTrainer):
             if self.global_step % 100 == 0:
                 model_path = self.saver.save(model, epoch=1, step=self.global_step)
                 logging.info(f'save to {model_path}')
+            # if mode == 'test':
+            # output = torch.softmax(pred, dim=-1)
+            # pred = torch.argmax(output, dim=-1)
             # print('labels: ', batch_labels)
-            # print('pred: ', pred)
+            # print('pred: ', pred.tolist())
+            # print('--' * 10 + '\n\n')

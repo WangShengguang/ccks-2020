@@ -72,7 +72,8 @@ class DataConfig(object):
 
 
 class TorchConfig(object):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cpu')
     # device = "cpu"
     gpu_nums = torch.cuda.device_count()
     multi_gpu = True
@@ -82,29 +83,28 @@ class TorchConfig(object):
 
 class Parms(object):
     #
-    learning_rate = 0.001
-    #
-    min_epoch_nums = 50
-    max_epoch_nums = 200
-    #
-    embedding_dim = 128  # entity enbedding dim, relation enbedding dim , word enbedding dim
+    # learning_rate = 0.001
+    # #
+    # min_epoch_nums = 1
+    # max_epoch_nums = 10
+    # #
+    # embedding_dim = 128  # entity enbedding dim, relation enbedding dim , word enbedding dim
     max_len = 50  # max sentence length
-    batch_size = 32
-    # subtask = 'general'
-    test_batch_size = 128
-    lr = 0.0001
+    # batch_size = 32
+    # # subtask = 'general'
+    # test_batch_size = 128
 
 
 class Config(TorchConfig, DataConfig, Parms):
     pretrained_model_name_or_path = os.path.join(data_dir, 'bert-base-chinese-pytorch')  # 'bert-base-chinese'
-    load_pretrain = True
-    rand_seed = 1234
+    # load_pretrain = True
+    # rand_seed = 1234
     # load_model_mode = "min_loss"
     # load_model_mode = "max_step"
-    load_model_mode = "max_acc"  # mrr
+    # load_model_mode = "max_acc"  # mrr
     #
     # train_count = 1000  # TODO for debug
-    test_count = 10  # 10*2*13589
+    # test_count = 10  # 10*2*13589
 
 
 class ResultSaver(object):

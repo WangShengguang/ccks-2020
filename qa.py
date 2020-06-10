@@ -13,7 +13,8 @@ from config import valid_question_txt, ResultSaver
 def train_answer():
     logging_config('train_answer.log', stream_log=True)
     from ckbqa.qa.qa import QA
-    from ckbqa.dataset.data_prepare import load_data, question_patten, entity_patten, attr_pattern
+    from ckbqa.dataset.data_prepare import load_data, question_patten, entity_pattern, attr_pattern
+    from ckbqa.qa.evaluation_matrics import get_metrics
     #
     logging.info('* start run ...')
     qa = QA()
@@ -25,8 +26,8 @@ def train_answer():
         print(f" sparql    : {sparql}")
         print(f" standard answer   : {answer}")
         q_text = question_patten.findall(question)[0]
-        subject_entities = entity_patten.findall(sparql) + attr_pattern.findall(sparql)
-        answer_entities = entity_patten.findall(answer) + attr_pattern.findall(answer)
+        subject_entities = entity_pattern.findall(sparql) + attr_pattern.findall(sparql)
+        answer_entities = entity_pattern.findall(answer) + attr_pattern.findall(answer)
         try:
             (result_entities, candidate_entities,
              candidate_out_paths, candidate_in_paths) = qa.run(q_text, return_candidates=True)
@@ -34,8 +35,13 @@ def train_answer():
             logging.info(traceback.format_exc())
             result_entities = []
             candidate_entities = []
-        import ipdb
-        ipdb.set_trace()
+        precision, recall, f1 = get_metrics(subject_entities, candidate_entities)
+        if recall == 0 or len(set(answer_entities) & set(candidate_entities)) == 0:
+            print(f"question: {question}\n"
+                  f"subject_entities: {subject_entities}, candidate_entities: {candidate_entities}"
+                  f"precision: {precision:.4f}, recall: {recall:.4f}, f1: {f1:.4f}\n\n")
+        # import ipdb
+        # ipdb.set_trace()
         data.append([question, subject_entities, list(candidate_entities), answer_entities, result_entities])
     data_df = pd.DataFrame(data, columns=['question', 'subject_entities', 'candidate_entities',
                                           'answer_entities', 'result_entities'])

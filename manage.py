@@ -25,7 +25,7 @@ def run(model_name, mode):
     logging_config(f'{model_name}_{mode}.log', stream_log=True)
     if model_name in ['bert_match', 'bert_match2']:
         from ckbqa.models.trainer import Trainer
-        Trainer(model_name).train()
+        Trainer(model_name).train_match_model()
     elif model_name == 'entity_score':
         from ckbqa.models.entity_score import EntityScore
         EntityScore().train()
@@ -67,6 +67,7 @@ if __name__ == '__main__':
     """ 代码执行入口
     examples:
         nohup python manage.py --train bert_match &>bert_match.out&
+        nohup python manage.py --train entity_score &>entity_score.out&
     """
 
     main()

@@ -2,7 +2,9 @@ from collections import defaultdict
 from typing import List
 
 import jieba
+import numpy as np
 
+from ckbqa.models.entity_score import EntityScore
 from ckbqa.qa.algorithms import sequences_set_similar
 from ckbqa.qa.cache import Memory
 from ckbqa.qa.lac_tools import BaiduLac
@@ -27,6 +29,8 @@ class Recognizer(object):
                                    '培养出', '为什么', '什么时候', '人', '你知道', '都包括', '是谁', '告诉我',
                                    '又叫做'}
         self.entity_stop_words = {'有', '是', '《', '》', '率', '·'}
+        # self.entity_score = EntityScore()
+        self.entity_score = EntityScore(load_model=True)
 
     def get_ner_words(self, text):
         words, tags = self.lac.run(text)
@@ -123,22 +127,26 @@ class Recognizer(object):
                 similar_feature, popular_feature = self.get_entity_feature(q_text, ent_name)
                 candidate_subject[ent_name]['mention'] = pure_entname
                 candidate_subject[ent_name]['feature'] = [sim for sim in similar_feature] + [popular_feature ** 0.5]
-        return candidate_subject
+        # subject_score_topn打分做筛选
+        top_subjects = self.subject_score_topn(candidate_subject)
+        return top_subjects
 
-    def subject_score_topn(self, candidate_entities: dict):
+    def subject_score_topn(self, candidate_entities: dict, top_k=10):
         '''
             :candidate_entities  {ent: }
         输入候选主语和对应的特征，使用训练好的模型进行打分，排序后返回前topn个候选主语
         '''
-        entitys = []
+        top_k = len(candidate_entities)  # TODO 不做筛选，保留所有实体；目前筛选效果不好
+        if top_k >= len(candidate_entities):
+            return candidate_entities
+        entities = []
         features = []
         for ent, feature_dic in candidate_entities.items():
-            entitys.append(ent)
+            entities.append(ent)
             features.append(feature_dic['feature'])
-        # TODO 打分做筛选
-        return candidate_entities
-
-# self.ent_tags = {'ORG', 'PER', 'LOC', 'TIME'}  # , 'nz', 'n', 'nw'}
-# self.rel_tags = {'v'}
-# self.legal_tags = {'ENTITY', 'MENTION'}
-#
+        scores = self.entity_score.predict(features)
+        # print(f'scores: {scores}')
+        top_k_indexs = np.asarray(scores).argsort()[-top_k:][::-1]
+        top_k_entities = {entities[i]: candidate_entities[entities[i]]
+                          for i in top_k_indexs}
+        return top_k_entities

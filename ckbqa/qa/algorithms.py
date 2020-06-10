@@ -53,9 +53,15 @@ class Algorithms(object):
 
 
 if __name__ == '__main__':
-    q_text = '怎样的检查项目能对小儿多源性房性心动过速、急性肾>功能不全以及动静脉血管瘤做出检测？'
-    out_paths = [['<肾功能不全>', '<>来源>']]
-    in_paths = [['肾功能', '<检查项目>', '<标签>']]
+    # q_text = '怎样的检查项目能对小儿多源性房性心动过速、急性肾>功能不全以及动静脉血管瘤做出检测？'
+    # out_paths = [['<肾功能不全>', '<>来源>']]
+    # in_paths = [['肾功能', '<检查项目>', '<标签>']]
+    # q_text = '演员梅艳芳有多高？'
+    # out_paths = [['<梅艳芳>', '<身高>']]  # 6.2
+    # in_paths = [['<梅艳芳>', '<演员>']]  # 8.2
+    q_text = '叶文洁毕业于哪个大学？'
+    out_paths = [['<叶文洁>', '<毕业院校>', '<学校代码>']]  # 7.9333
+    in_paths = [['<大学>', '<毕业于>', '<类型>']]  # 7.9762
     algo = Algorithms()
     algo.get_most_overlap_path(q_text, out_paths)
     algo.get_most_overlap_path(q_text, in_paths)

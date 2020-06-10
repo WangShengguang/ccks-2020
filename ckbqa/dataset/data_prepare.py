@@ -8,10 +8,9 @@ from tqdm import tqdm
 from ckbqa.utils.tools import json_dump, json_load
 from config import DataConfig, raw_train_txt
 
-entity_patten = re.compile(r'(<.*?>)')  # 保留<>
+entity_pattern = re.compile(r'(<.*?>)')  # 保留<>
 attr_pattern = re.compile(r'"(.*?)"')  # 不保留"", "在json key中不便保存
 question_patten = re.compile(r'q\d{1,4}:(.*)')
-# subject_patten = re.compile(r'["<](.*?)[>"]')  # 不要过多预处理
 
 PAD = 0
 UNK = 1
@@ -30,8 +29,8 @@ def fit_on_texts():
     a_entities_set = set()
     words_set = set()
     for q, sparql, a in load_data():
-        a_entities = entity_patten.findall(a)
-        q_entities = entity_patten.findall(sparql)
+        a_entities = entity_pattern.findall(a)
+        q_entities = entity_pattern.findall(sparql)
         q_text = question_patten.findall(q)
         entities = a_entities + q_entities
         words = list(q_text[0]) + [e for ent in entities for e in ent]
@@ -61,9 +60,9 @@ def data_convert():
             'a_entities': [], 'a_strs': []}
     for q, sparql, a in load_data():
         q_text = question_patten.findall(q)[0]
-        q_entities = entity_patten.findall(sparql)
+        q_entities = entity_pattern.findall(sparql)
         q_strs = attr_pattern.findall(sparql)
-        a_entities = entity_patten.findall(a)
+        a_entities = entity_pattern.findall(a)
         a_strs = attr_pattern.findall(a)
         data['question'].append(q_text)
         data['q_entities'].append(q_entities)
@@ -78,10 +77,10 @@ def data2samples(neg_rate=3, test_size=0.1):
     sim_questions = []
     labels = []
     all_relations = list(json_load(DataConfig.relation2id))
-    _entity_patten = re.compile(r'["<](.*?)[>"]')
+    _entity_pattern = re.compile(r'["<](.*?)[>"]')
     for q, sparql, a in load_data(tqdm_prefix='data2samples '):
         q_text = question_patten.findall(q)[0]
-        q_entities = _entity_patten.findall(sparql)
+        q_entities = _entity_pattern.findall(sparql)
         questions.append(q_text)
         sim_questions.append('的'.join(q_entities))
         labels.append(1)

@@ -2,30 +2,30 @@
 从所有候选实体中筛选出topn个候选实体
 '''
 
-import re
 import os
-from sklearn import linear_model
+
 import numpy as np
-from ckbqa.dataset.data_prepare import question_patten, entity_patten, load_data
-from ckbqa.qa.recognizer import Recognizer
+from sklearn import preprocessing
+from sklearn.linear_model import LogisticRegression
+
+from ckbqa.dataset.data_prepare import question_patten, entity_pattern, attr_pattern, load_data
 from ckbqa.utils.tools import pkl_dump, pkl_load
 from config import Config
-
-ent_attr_partten = re.compile('["<](.*?)[>"]')
 
 
 class EntityScore(object):
     def __init__(self, load_model=False):
         if load_model:
-            self.model = pkl_load(Config.entity_score_model_pkl)
+            self.model: LogisticRegression = pkl_load(Config.entity_score_model_pkl)
 
     def gen_train_data(self):
         X_train = []
         Y_label = []
+        from ckbqa.qa.recognizer import Recognizer  # 避免循环导入
         recognizer = Recognizer()
         for q, sparql, a in load_data(tqdm_prefix='EntityScore train data '):
-            a_entities = entity_patten.findall(a)
-            q_entities = ent_attr_partten.findall(sparql)  # attr
+            # a_entities = entity_pattern.findall(a)
+            q_entities = set(entity_pattern.findall(sparql) + attr_pattern.findall(sparql))  # attr
             q_text = question_patten.findall(q)[0]
             candidate_entities = recognizer.get_candidate_entities(q_text)
             for ent_name, feature_dict in candidate_entities.items():
@@ -39,11 +39,18 @@ class EntityScore(object):
         if not os.path.isfile(Config.entity_score_data_pkl):
             self.gen_train_data()
         data = pkl_load(Config.entity_score_data_pkl)
-        X_train, Y_label = data['x_data'], data['y_label']
-        model = linear_model.LogisticRegression(C=1e5)
-        model.fit(np.array(X_train), np.array(Y_label))
+        X_train = preprocessing.scale(np.array(data['x_data']))
+        # Y_label = np.eye(2)[data['y_label']]  # class_num==2
+        Y_label = np.array(data['y_label'])  # class_num==2
+        print(f"X_train : {X_train.shape}, Y_label: {Y_label.shape}")
+        print(f"sum(Y_label): {sum(Y_label)}")
+        model = LogisticRegression(C=1e5, verbose=1)
+        model.fit(X_train, Y_label)
+        # model.predict()
+        accuracy_score = model.score(X_train, Y_label)
+        print(f"accuracy_score: {accuracy_score:.4f}")
         pkl_dump(model, Config.entity_score_model_pkl)
 
     def predict(self, features):
-        preds = self.model(features)
+        preds = self.model.predict(np.asarray(features))
         return preds
