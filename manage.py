@@ -23,8 +23,12 @@ def set_envs(cpu_only, allow_gpus):
 
 def run(model_name, mode):
     logging_config(f'{model_name}_{mode}.log', stream_log=True)
-    from ckbqa.models.trainer import Trainer
-    Trainer(model_name).train()
+    if model_name in ['bert_match', 'bert_match2']:
+        from ckbqa.models.trainer import Trainer
+        Trainer(model_name).train()
+    elif model_name == 'entity_score':
+        from ckbqa.models.entity_score import EntityScore
+        EntityScore().train()
 
 
 def main():
@@ -41,7 +45,7 @@ def main():
     #
     group = parser.add_mutually_exclusive_group(required=True)  # 一组互斥参数,且至少需要互斥参数中的一个
     #
-    all_models = ['bert_match', 'bert_match2']
+    all_models = ['bert_match', 'bert_match2', 'entity_score']
     group.add_argument('--train', type=str, choices=all_models, help="训练")
     group.add_argument('--test', type=str, choices=all_models, help="测试")
     # parse args

@@ -30,26 +30,29 @@ class Recognizer(object):
 
     def get_ner_words(self, text):
         words, tags = self.lac.run(text)
-        mentions = []
-        entities = []
+        mentions = set()
+        entities = set()
         for word, tag in zip(words, tags):
             if len(word) < 2 or word in self.entity_stop_words:
                 continue
-            if tag == 'ENTITY' or f"<{word}>" in self.memory.entity2id:
-                entities.append(word)
-            elif tag == 'MENTION' or word in self.memory.mention2entity:
+            if f"<{word}>" in self.memory.entity2id:
+                entities.add(word)
+            elif word in self.memory.mention2entity:
                 if word not in self.mention_stop_words:
-                    mentions.append(word)
+                    mentions.add(word)
+        #
+        for word in jieba.cut_for_search(text):
+            if len(word) < 2 or word in self.entity_stop_words:
+                continue
+            if f"<{word}>" in self.memory.entity2id:
+                entities.add(word)
+            elif word in self.memory.mention2entity:
+                if word not in self.mention_stop_words:
+                    mentions.add(word)
         return mentions, entities
 
     def seg_text(self, text):
         return self.lac.run(text)[0]
-
-    def get_attrs(self, text):
-        words, tags = self.lac.run(text)
-        jieba_words = list(jieba.cut_for_search(text))
-        attrs = set(words + jieba_words) & self.memory.all_attrs
-        return attrs
 
     def ent_rel_similar(self, question: str, entity: str, relations: List):
         '''
@@ -98,28 +101,28 @@ class Recognizer(object):
     def get_candidate_entities(self, q_text):
         """
         :param q_text:
-        :return: candidate_subject: { ent:[mention,feature1, feature2, ...]}
+        :return: candidate_subject: { ent_name: {'mention':mention_txt,
+                                                  'feature': [feature1, feature2, ...]
+                                                  },
+                                    ...
+                                    }
         """
         mentions, _entities = self.get_ner_words(q_text)
         candidate_subject = defaultdict(dict)  # {ent:[mention, feature1, feature2, ...]}
-
-        def add_candidate_feature(mention, ent_name):
-            # if len(ent_name) < 4:  # <北京>
-            #     return
-            similar_feature, popular_feature = self.get_entity_feature(q_text, ent_name)
-            candidate_subject[ent_name]['mention'] = mention
-            candidate_subject[ent_name]['feature'] = [sim for sim in similar_feature] + [popular_feature ** 0.5]
-
+        #
         for mention in mentions:
             for ent in self.memory.mention2entity[mention]:
                 ent_name = f"<{ent}>"
-                add_candidate_feature(mention, ent_name)
-        for ent in _entities:
-            ent_name = f"<{ent}>"
-            add_candidate_feature(ent, ent_name)
-        for attr_name in self.get_attrs(q_text):
-            if attr_name not in candidate_subject:
-                add_candidate_feature(attr_name, attr_name)
+                similar_feature, popular_feature = self.get_entity_feature(q_text, ent_name)
+                candidate_subject[ent_name]['mention'] = mention
+                candidate_subject[ent_name]['feature'] = [sim for sim in similar_feature] + [popular_feature ** 0.5]
+        #
+        for pure_entname in _entities:
+            ent_name = f"<{pure_entname}>"
+            if ent_name not in candidate_subject:
+                similar_feature, popular_feature = self.get_entity_feature(q_text, ent_name)
+                candidate_subject[ent_name]['mention'] = pure_entname
+                candidate_subject[ent_name]['feature'] = [sim for sim in similar_feature] + [popular_feature ** 0.5]
         return candidate_subject
 
     def subject_score_topn(self, candidate_entities: dict):
@@ -132,7 +135,7 @@ class Recognizer(object):
         for ent, feature_dic in candidate_entities.items():
             entitys.append(ent)
             features.append(feature_dic['feature'])
-        # 打分做筛选
+        # TODO 打分做筛选
         return candidate_entities
 
 # self.ent_tags = {'ORG', 'PER', 'LOC', 'TIME'}  # , 'nz', 'n', 'nw'}

@@ -20,8 +20,8 @@ class GraphDB(object):
         self._one_hop_relNames_map = {'in': {}, 'out': {}}
         self._two_hop_relNames_map = {'in': {}, 'out': {}}
         self.all_directions = {'in', 'out'}
-        self.memory = Memory()
         self.load_cache()
+        self.memory = Memory()
         self.async_cache()
 
     def __del__(self):

@@ -1,8 +1,8 @@
 import logging
 import os
-from datetime import datetime
 from pathlib import Path
 
+import arrow
 import torch
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
@@ -47,14 +47,16 @@ class DataConfig(object):
     lac_custom_dict_txt = os.path.join(data_dir, 'lac_custom_dict.txt')
     lac_attr_custom_dict_txt = os.path.join(data_dir, 'lac_attr_custom_dict.txt')
     # graph_pkl = os.path.join(data_dir, 'graph.pkl')
-    graph_entity_csv = os.path.join(data_dir, 'graph_entity.csv')
-    graph_relation_csv = os.path.join(data_dir, 'graph_relation.csv')
+    graph_entity_csv = os.path.join(data_dir, 'graph_entity.csv')  # 图谱导入
+    graph_relation_csv = os.path.join(data_dir, 'graph_relation.csv')  # 图谱导入
     entity2types_json = os.path.join(data_dir, 'entity2type.json')
     entity2attrs_json = os.path.join(data_dir, 'entity2attr.json')
     all_attrs_json = os.path.join(data_dir, 'all_attrs.json')
     #
     lac_model_pkl = os.path.join(data_dir, 'lac_model.pkl')
+    # EntityScore model
     entity_score_model_pkl = os.path.join(data_dir, 'entity_score_model.pkl')
+    entity_score_data_pkl = os.path.join(data_dir, 'entity_score_data.pkl')
     #
     neo4j_query_cache = os.path.join(data_dir, 'neo4j_query_cache.json')
 
@@ -108,42 +110,49 @@ class Config(TorchConfig, DataConfig, Parms):
 class ResultSaver(object):
     """输出文件管理；自动生成新文件名；避免覆盖"""
 
-    def __init__(self, new_file=True):
-        self.new_file = new_file
+    def __init__(self, new_path=True):
+        self.new_path = new_path
 
-    def _get_path(self, file_name):
-        date_str = str(datetime.today())[:10]  #
-        date_str = ''.join(date_str.split('-'))
-        date_str = '20200609' #临时修改
-        path = os.path.join(result_dir, f"{date_str}-{file_name}")
-        if self.new_file:
-            num = 1
-            while os.path.isfile(path):
-                path = os.path.join(result_dir, f"{date_str}-{num}-{file_name}")
-                num += 1
-        else:
-            num = 20
-            while num and not os.path.isfile(path):
-                path = os.path.join(result_dir, f"{date_str}-{num}-{file_name}")
-                num -= 1
-                print(path, num)
-            if not os.path.isfile(path):
-                raise FileNotFoundError(path)
-        logging.info(f'* {path}')
+    def _get_new_path(self, file_name):
+        date_str = arrow.now().format("YYYYMMDD")
+        # date_str = '20200609' #临时修改
+        num = 1
+        path = os.path.join(result_dir, f"{date_str}-{num}-{file_name}")
+        while os.path.isfile(path):
+            path = os.path.join(result_dir, f"{date_str}-{num}-{file_name}")
+            num += 1
+        logging.info(f'* get path: {path}')
         return path
+
+    def _find_paths(self, file_name):
+        paths = [str(_path) for _path in
+                 Path(result_dir).rglob(f'*{file_name}')]
+        _path = sorted(paths, reverse=True)
+        return _path
 
     @property
     def train_result_csv(self):
-        print('train_result_csv')
-        path = self._get_path('train_answer_result.csv')
+        file_name = 'train_answer_result.csv'
+        if self.new_path:
+            path = self._get_new_path(file_name)
+        else:
+            path = self._find_paths(file_name)
         return path
 
     @property
     def valid_result_csv(self):
-        path = self._get_path('valid_result.csv')
+        file_name = 'valid_result.csv'
+        if self.new_path:
+            path = self._get_new_path(file_name)
+        else:
+            path = self._find_paths(file_name)
         return path
 
     @property
     def submmit_result_txt(self):
-        path = self._get_path('submmit_result.txt')
+        file_name = 'submmit_result.txt'
+        if self.new_path:
+            path = self._get_new_path(file_name)
+        else:
+            path = self._find_paths(file_name)
         return path

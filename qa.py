@@ -1,5 +1,6 @@
 import argparse
 import logging
+import re
 import traceback
 
 import pandas as pd
@@ -12,7 +13,7 @@ from config import valid_question_txt, ResultSaver
 def train_answer():
     logging_config('train_answer.log', stream_log=True)
     from ckbqa.qa.qa import QA
-    from ckbqa.dataset.data_prepare import load_data, question_patten, entity_patten, string_patten
+    from ckbqa.dataset.data_prepare import load_data, question_patten, entity_patten, attr_pattern
     #
     logging.info('* start run ...')
     qa = QA()
@@ -24,14 +25,17 @@ def train_answer():
         print(f" sparql    : {sparql}")
         print(f" standard answer   : {answer}")
         q_text = question_patten.findall(question)[0]
-        subject_entities = entity_patten.findall(sparql) + string_patten.findall(sparql)
-        answer_entities = entity_patten.findall(answer) + string_patten.findall(answer)
+        subject_entities = entity_patten.findall(sparql) + attr_pattern.findall(sparql)
+        answer_entities = entity_patten.findall(answer) + attr_pattern.findall(answer)
         try:
-            result_entities, candidate_entities = qa.run(q_text, return_candidate_ent=True)
+            (result_entities, candidate_entities,
+             candidate_out_paths, candidate_in_paths) = qa.run(q_text, return_candidates=True)
         except:
             logging.info(traceback.format_exc())
             result_entities = []
             candidate_entities = []
+        import ipdb
+        ipdb.set_trace()
         data.append([question, subject_entities, list(candidate_entities), answer_entities, result_entities])
     data_df = pd.DataFrame(data, columns=['question', 'subject_entities', 'candidate_entities',
                                           'answer_entities', 'result_entities'])
@@ -42,18 +46,28 @@ def train_evaluate():
     logging_config('train_evaluate.log', stream_log=True)
     from ckbqa.qa.evaluation_matrics import get_metrics
     #
-    train_df = pd.read_csv(ResultSaver(new_file=False).train_result_csv)
+    partten = re.compile(r'["<](.*?)[>"]')
+    #
+    _paths = ResultSaver(new_path=False).train_result_csv
+    print(_paths)
+    train_df = pd.read_csv(_paths[0])
     precisions, recalls, f1_scores = [], [], []
     for index, row in tqdm(train_df.iterrows(), total=train_df.shape[0], desc='evaluate '):
-        subject_entities = eval(row['subject_entities'])
-        result_entities = eval(row['result_entities'])
-        precision, recall, f1 = get_metrics(subject_entities, result_entities)
+        subject_entities = partten.findall(row['subject_entities'])  # 匹配文字
+        if not subject_entities:
+            subject_entities = eval(row['subject_entities'])
+        # 修复之前把实体<>去掉造成的问题；问题解析时去掉，但预测时未去掉；
+        # 所以需要匹配文字，不匹配 <>, ""
+        candidate_entities = eval(row['candidate_entities']) + partten.findall(row['candidate_entities'])
+        precision, recall, f1 = get_metrics(subject_entities, candidate_entities)
         precisions.append(precision)
         recalls.append(recall)
         f1_scores.append(f1)
-        print(f"question: {row['question']}\n"
-              f"subject_entities: {subject_entities}, result_entities: {result_entities}"
-              f"precision: {precision}, recall: {recall}, f1: {f1}\n\n")
+        # print(f"question: {row['question']}\n"
+        #       f"subject_entities: {subject_entities}, candidate_entities: {candidate_entities}"
+        #       f"precision: {precision:.4f}, recall: {recall:.4f}, f1: {f1:.4f}\n\n")
+        # import time
+        # time.sleep(2)
     ave_precision = sum(precisions) / len(precisions)
     ave_recall = sum(recalls) / len(recalls)
     ave_f1_score = sum(f1_scores) / len(f1_scores)
@@ -154,7 +168,6 @@ if __name__ == '__main__':
         nohup  python qa.py --train_answer &>train_answer.out & 
         nohup  python qa.py --train_evaluate &>train_evaluate.out & 
         nohup  python qa.py --valid_answer &>valid_answer.out & 
-        nohup  python qa.py --valid2submmit &>valid2submmit.out & 
         nohup  python qa.py --valid2submmit &>valid2submmit.out & 
         nohup  python qa.py --task &>qa_task.out & 
     """

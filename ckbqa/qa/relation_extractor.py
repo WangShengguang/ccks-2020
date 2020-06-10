@@ -46,6 +46,7 @@ class RelationExtractor(object):
         if not candidate_out_sents and not candidate_in_sents:
             logging.info('* candidate_out_paths Empty ...')
             return
+        # TODO 模型打分
         # sim_scores = self.sim_predictor.predict(q_text, candidate_out_paths) #目前算法不好，score==1
         return candidate_out_paths, candidate_in_paths
 

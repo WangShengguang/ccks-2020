@@ -34,7 +34,7 @@ class QA(object):
         self.algo = Algorithms()
         logging.info('QA init Done ...')
 
-    def run(self, q_text, return_candidate_ent=False):
+    def run(self, q_text, return_candidates=False):
         logging.info('\n\n' + '--' * 20)
         logging.info(f"* q_text: {q_text}")
         candidate_entities = self.recognizer.get_candidate_entities(q_text)
@@ -68,8 +68,8 @@ class QA(object):
             print('这个查询路径不规范')
             answer = []
         logging.info(f"* cypher answer: {answer}")
-        if return_candidate_ent:
-            return answer, candidate_entities
+        if return_candidates:
+            return answer, candidate_entities, candidate_out_paths, candidate_in_paths
         return answer
 
     # def evaluate(self, question, subject_entities, answer_entities):

@@ -26,9 +26,9 @@ def singleton(cls):
     @wraps(cls)
     def get_instance(*args, **kw):
         if cls not in instances:  # 保证只初始化一次
-            logging.info(f"{cls.__name__} async init start ...")
+            logging.info(f"{cls.__name__} init start ...")
             instances[cls] = cls(*args, **kw)
-            logging.info(f"{cls.__name__} async init done ...")
+            logging.info(f"{cls.__name__} init done ...")
         return instances[cls]
 
     return get_instance

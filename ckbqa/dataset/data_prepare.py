@@ -8,8 +8,8 @@ from tqdm import tqdm
 from ckbqa.utils.tools import json_dump, json_load
 from config import DataConfig, raw_train_txt
 
-entity_patten = re.compile(r'<(.*?)>')
-string_patten = re.compile(r'"(.*?)"')
+entity_patten = re.compile(r'(<.*?>)')  # 保留<>
+attr_pattern = re.compile(r'"(.*?)"')  # 不保留"", "在json key中不便保存
 question_patten = re.compile(r'q\d{1,4}:(.*)')
 # subject_patten = re.compile(r'["<](.*?)[>"]')  # 不要过多预处理
 
@@ -62,9 +62,9 @@ def data_convert():
     for q, sparql, a in load_data():
         q_text = question_patten.findall(q)[0]
         q_entities = entity_patten.findall(sparql)
-        q_strs = string_patten.findall(sparql)
+        q_strs = attr_pattern.findall(sparql)
         a_entities = entity_patten.findall(a)
-        a_strs = string_patten.findall(a)
+        a_strs = attr_pattern.findall(a)
         data['question'].append(q_text)
         data['q_entities'].append(q_entities)
         data['q_strs'].append(q_strs)

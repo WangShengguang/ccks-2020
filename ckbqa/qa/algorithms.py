@@ -56,6 +56,6 @@ if __name__ == '__main__':
     q_text = '怎样的检查项目能对小儿多源性房性心动过速、急性肾>功能不全以及动静脉血管瘤做出检测？'
     out_paths = [['<肾功能不全>', '<>来源>']]
     in_paths = [['肾功能', '<检查项目>', '<标签>']]
-    algo = Algorithm()
+    algo = Algorithms()
     algo.get_most_overlap_path(q_text, out_paths)
     algo.get_most_overlap_path(q_text, in_paths)
