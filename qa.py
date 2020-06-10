@@ -1,20 +1,19 @@
+import argparse
 import logging
 import traceback
-from datetime import datetime
 
 import pandas as pd
 from tqdm import tqdm
 
 from ckbqa.utils.logger import logging_config
-
-logging_config('qa.log', stream_log=True)
-
-from ckbqa.dataset.data_prepare import load_data, question_patten, entity_patten, string_patten
-from ckbqa.qa.qa import QA
-from config import valid_question_txt
+from config import valid_question_txt, ResultSaver
 
 
-def run():
+def train_answer():
+    logging_config('train_answer.log', stream_log=True)
+    from ckbqa.qa.qa import QA
+    from ckbqa.dataset.data_prepare import load_data, question_patten, entity_patten, string_patten
+    #
     logging.info('* start run ...')
     qa = QA()
     data = []
@@ -28,25 +27,53 @@ def run():
         subject_entities = entity_patten.findall(sparql) + string_patten.findall(sparql)
         answer_entities = entity_patten.findall(answer) + string_patten.findall(answer)
         try:
-            result_entities = qa.run(q_text)
+            result_entities, candidate_entities = qa.run(q_text, return_candidate_ent=True)
         except:
             logging.info(traceback.format_exc())
             result_entities = []
-        data.append([question, subject_entities, answer_entities, result_entities])
-    data_df = pd.DataFrame(data, columns=['question', 'subject_entities',
+            candidate_entities = []
+        data.append([question, subject_entities, list(candidate_entities), answer_entities, result_entities])
+    data_df = pd.DataFrame(data, columns=['question', 'subject_entities', 'candidate_entities',
                                           'answer_entities', 'result_entities'])
-    date_str = str(datetime.today())[:10]
-    data_df.to_csv(f'./{date_str}-train_answer_result.csv', index=False, encoding='utf_8_sig')
+    data_df.to_csv(ResultSaver().train_result_csv, index=False, encoding='utf_8_sig')
 
 
-def get_answer():
+def train_evaluate():
+    logging_config('train_evaluate.log', stream_log=True)
+    from ckbqa.qa.evaluation_matrics import get_metrics
+    #
+    train_df = pd.read_csv(ResultSaver(new_file=False).train_result_csv)
+    precisions, recalls, f1_scores = [], [], []
+    for index, row in tqdm(train_df.iterrows(), total=train_df.shape[0], desc='evaluate '):
+        subject_entities = eval(row['subject_entities'])
+        result_entities = eval(row['result_entities'])
+        precision, recall, f1 = get_metrics(subject_entities, result_entities)
+        precisions.append(precision)
+        recalls.append(recall)
+        f1_scores.append(f1)
+        print(f"question: {row['question']}\n"
+              f"subject_entities: {subject_entities}, result_entities: {result_entities}"
+              f"precision: {precision}, recall: {recall}, f1: {f1}\n\n")
+    ave_precision = sum(precisions) / len(precisions)
+    ave_recall = sum(recalls) / len(recalls)
+    ave_f1_score = sum(f1_scores) / len(f1_scores)
+    print(f"ave_precision: {ave_precision:.3f}, "
+          f"ave_recall: {ave_recall:.3f}, "
+          f"ave_f1_score:{ave_f1_score:.3f}")
+
+
+def valid_answer():
+    """验证数据答案"""
+    logging_config('valid_answer.log', stream_log=True)
+    from ckbqa.qa.qa import QA
+    from ckbqa.dataset.data_prepare import question_patten
+    #
     data_df = pd.DataFrame([question.strip() for question in open(valid_question_txt, 'r', encoding='utf-8')],
                            columns=['question'])
     logging.info(f"data_df.shape: {data_df.shape}")
     qa = QA()
-    date_str = str(datetime.today())[:10]
     valid_datas = {'question': [], 'result': []}
-    with open(f'./{date_str}-result.txt', 'w', encoding='utf-8') as f:
+    with open(ResultSaver().submmit_result_txt, 'w', encoding='utf-8') as f:
         for index, row in tqdm(data_df.iterrows(), total=data_df.shape[0], desc='qa answer'):
             question = row['question']
             q_text = question_patten.findall(question)[0]
@@ -61,19 +88,74 @@ def get_answer():
             f.flush()
             valid_datas['question'].append(question)
             valid_datas['result'].append(answer_entities)
-            # logging.info(f'q_text: {row["q_text"]}, \nanswer: {answer_entities}') #内部已有
-    pd.DataFrame(valid_datas).to_csv('./valid_result.csv', index=False, encoding='utf_8_sig')
+    pd.DataFrame(valid_datas).to_csv(ResultSaver().valid_result_csv, index=False, encoding='utf_8_sig')
+
+
+def valid2submmit():
+    '''
+        验证数据输出转化为答案提交
+    '''
+    logging_config('valid2submmit.log', stream_log=True)
+    data_df = pd.read_csv(ResultSaver().valid_result_csv)
+    with open(ResultSaver().submmit_result_txt, 'w', encoding='utf-8') as f:
+        for index, row in data_df.iterrows():
+            ents = []
+            for ent in eval(row['result']):
+                if ent.startswith('<'):
+                    ents.append(ent)
+                elif ent.startswith('"'):
+                    ent = ent.strip('"')
+                    ents.append(f'"{ent}"')
+            if ents:
+                f.write('\t'.join(ents) + '\n')
+            else:
+                f.write('""\n')
+            f.flush()
 
 
 def main():
-    print('* start run ...')
-    get_answer()
-    run()
+    parser = argparse.ArgumentParser(description="基础，通用parser")
+    # logging config 日志配置
+    parser.add_argument('--stream_log', action="store_true", help="是否将日志信息输出到标准输出")  # log print到屏幕
+    #
+    group = parser.add_mutually_exclusive_group(required=True)  # 一组互斥参数,且至少需要互斥参数中的一个
+
+    group.add_argument('--train_answer', action="store_true", help="训练集答案")
+    group.add_argument('--train_evaluate', action="store_true", help="验证数据指标评价")
+    group.add_argument('--valid_answer', action="store_true", help="验证数据（待提交数据）答案")
+    group.add_argument('--valid2submmit', action="store_true", help="验证数据处理后提交")
+    group.add_argument('--task', action="store_true", help="临时组织的任务，调用多个函数")
+    # parse args
+    args = parser.parse_args()
+    #
+    # from ckbqa.utils.tools import ProcessManager
+    # ProcessManager().run()
+    if args.train_answer:
+        train_answer()
+    elif args.train_evaluate:
+        train_evaluate()
+    elif args.valid_answer:
+        valid_answer()
+    elif args.valid2submmit:
+        valid2submmit()
+    elif args.task:
+        task()
+
+
+def task():
+    logging_config('qa_task.log', stream_log=True)
+    train_answer()
+    valid_answer()
 
 
 if __name__ == '__main__':
     """
     example:
-        nohup  python qa.py &>qa.out & 
+        nohup  python qa.py --train_answer &>train_answer.out & 
+        nohup  python qa.py --train_evaluate &>train_evaluate.out & 
+        nohup  python qa.py --valid_answer &>valid_answer.out & 
+        nohup  python qa.py --valid2submmit &>valid2submmit.out & 
+        nohup  python qa.py --valid2submmit &>valid2submmit.out & 
+        nohup  python qa.py --task &>qa_task.out & 
     """
     main()

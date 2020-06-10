@@ -8,7 +8,7 @@ from torch import nn
 from config import Config
 
 
-class BertMatch2(nn.Module):
+class BertMatch(nn.Module):
     def __init__(self):
         super().__init__()
         self.bert = BertModel.from_pretrained(Config.pretrained_model_name_or_path)
@@ -37,7 +37,7 @@ class BertMatch2(nn.Module):
             return logistic, loss
 
 
-class BertMatch(nn.Module):
+class BertMatch2(nn.Module):
     def __init__(self):
         super().__init__()
         self.bert = BertModel.from_pretrained(Config.pretrained_model_name_or_path)

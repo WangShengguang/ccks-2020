@@ -10,7 +10,7 @@ from config import DataConfig, raw_train_txt
 
 entity_patten = re.compile(r'<(.*?)>')
 string_patten = re.compile(r'"(.*?)"')
-question_patten = re.compile('q\d{1,4}:(.*)')
+question_patten = re.compile(r'q\d{1,4}:(.*)')
 # subject_patten = re.compile(r'["<](.*?)[>"]')  # 不要过多预处理
 
 PAD = 0
@@ -56,7 +56,7 @@ def fit_on_texts():
 
 
 def data_convert():
-    """转化原始数据格式，方便采样entity"""
+    """转化原始数据格式, 方便采样entity"""
     data = {'question': [], 'q_entities': [], 'q_strs': [],
             'a_entities': [], 'a_strs': []}
     for q, sparql, a in load_data():

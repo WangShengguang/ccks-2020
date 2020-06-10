@@ -1,14 +1,12 @@
 import logging
 from typing import List
 
-from memory_profiler import profile
-
 from ckbqa.dataset.data_helper import DataHelper
-from ckbqa.models.bert_match import BertMatch, BertMatch2
+from ckbqa.models.relation_score import BertMatch, BertMatch2
 from ckbqa.utils.saver import Saver
 
 
-class BertMatchPredictor(object):
+class RelationScorePredictor(object):
     def __init__(self, model_name):
         logging.info(f'BertMatchPredictor loaded sim_model init ...')
         self.data_helper = DataHelper(load_tokenizer=True)
@@ -39,7 +37,6 @@ class BertMatchPredictor(object):
             sim_tensors = self.data_helper.data2tensor(sim_sent_token_ids)
             yield q_tensors[:len(sim_tensors)], sim_tensors
 
-    @profile
     def predict(self, q_text: List[str], sim_texts: List[str]):
         all_preds = []
         for q_tensors, sim_tensors in self.iter_sample(q_text, sim_texts):

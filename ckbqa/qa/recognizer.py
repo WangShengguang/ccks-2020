@@ -14,6 +14,11 @@ jieba.enable_paddle()  # 启动paddle模式。 0.40版之后开始支持，早�
 
 @singleton
 class Recognizer(object):
+    """Candidate Entity Generation：
+        从mention出发，找到KB中所有可能的实体，组成候选实体集 (candidate entities)；
+        最主流也最有效的方法就是Name Dictionary，说白了就是配别名
+    """
+
     def __init__(self):
         self.memory = Memory()
         self.graph_db = GraphDB()

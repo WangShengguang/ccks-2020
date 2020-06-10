@@ -1,7 +1,7 @@
 import logging
 import threading
 
-from ckbqa.qa.algorithms import Algorithm
+from ckbqa.qa.algorithms import Algorithms
 from ckbqa.qa.cache import Memory
 from ckbqa.qa.lac_tools import BaiduLac
 from ckbqa.qa.neo4j_graph import GraphDB
@@ -31,11 +31,11 @@ class QA(object):
         self.memory = Memory()
         self.recognizer = Recognizer()
         self.relation_extractor = RelationExtractor()
-        self.algo = Algorithm()
+        self.algo = Algorithms()
         logging.info('QA init Done ...')
 
-    def run(self, q_text):
-        logging.info('--' * 20)
+    def run(self, q_text, return_candidate_ent=False):
+        logging.info('\n\n' + '--' * 20)
         logging.info(f"* q_text: {q_text}")
         candidate_entities = self.recognizer.get_candidate_entities(q_text)
         logging.info(f'* get_candidate_entities {len(candidate_entities)} ...')
@@ -48,7 +48,6 @@ class QA(object):
         top_in_path, max_in_score = self.algo.get_most_overlap_path(q_text, candidate_in_paths)
         logging.info(f'* get_most_overlap in path：{max_in_score:.4f}， {top_in_path} ...')
         # self.graph_db.cache()  # 缓存neo4j查询结果
-        self.graph_db.update_total_queue()
         if max_out_score > max_in_score:
             direction = 'out'
             top_path = top_out_path
@@ -69,6 +68,8 @@ class QA(object):
             print('这个查询路径不规范')
             answer = []
         logging.info(f"* cypher answer: {answer}")
+        if return_candidate_ent:
+            return answer, candidate_entities
         return answer
 
     # def evaluate(self, question, subject_entities, answer_entities):

@@ -1,13 +1,13 @@
 # coding: utf-8
 import logging
 import os
-from queue import Queue
+import time
 
 from py2neo import Graph
 
 from ckbqa.qa.cache import Memory
 from ckbqa.utils.async_tools import apply_async
-from ckbqa.utils.decorators import singleton
+from ckbqa.utils.decorators import singleton, synchronized
 from ckbqa.utils.tools import json_load, json_dump
 from config import Config
 
@@ -22,10 +22,11 @@ class GraphDB(object):
         self.all_directions = {'in', 'out'}
         self.memory = Memory()
         self.load_cache()
-        apply_async(self.async_cache)
+        self.async_cache()
 
     def __del__(self):
-        self.cache()
+        # time.sleep(30)  # 等待另一个线程写入完成，避免交叉影响；使用线程锁替代
+        self.cache()  # 保证程序结束前会正确保存文件
 
     def get_total_entity_count(self):
         count = (len(self._one_hop_relNames_map['out']) +
@@ -35,7 +36,7 @@ class GraphDB(object):
         return count
 
     def load_cache(self):
-        self.queue = Queue(1)
+        # self.queue = Queue(maxsize=1)
         if os.path.isfile(Config.neo4j_query_cache):
             data_dict = json_load(Config.neo4j_query_cache)
             self._one_hop_relNames_map = data_dict['_one_hop_relNames_map']
@@ -46,16 +47,19 @@ class GraphDB(object):
             logging.info(f'not found neo4j_query_cache: {Config.neo4j_query_cache}')
             self.total_count = 0
 
-    def update_total_queue(self):
-        total = self.get_total_entity_count()
-        self.queue.put(total)
+    # def put_cache_sign(self):
+    #     self.queue.put(1)  # 每次结束后检查
 
     def async_cache(self):
-        while True:
-            total = self.queue.get()
-            if total > self.total_count:
+        def loop_check_cache():
+            while True:  # self.queue
                 self.cache()
+                time.sleep(10 * 60)
 
+        thr = apply_async(loop_check_cache, daemon=True)
+        return thr
+
+    @synchronized  # 避免多线程交叉影响
     def cache(self):
         total = self.get_total_entity_count()
         if total > self.total_count:
@@ -105,7 +109,7 @@ class GraphDB(object):
         start, end = ('ent:Entity', 'target') if direction == 'out' else ('target', 'ent:Entity')
         cql = (f"match ({start})-[r1:Relation]-({end}) where ent.id={ent_id} "
                f" and r1.name='{rel_name}' return DISTINCT target.name")
-        logging.info(f"{cql}; {ent_name}")
+        logging.info(f"{cql}; *ent_name:{ent_name}")
         res = graph.run(cql)
         target_name = [ent['target.name'] for ent in res]
         return target_name
@@ -116,7 +120,7 @@ class GraphDB(object):
         start, end = ('ent:Entity', 'target') if direction == 'out' else ('target', 'ent:Entity')
         cql = (f"match ({start})-[r1:Relation]-()-[r2:Relation]-({end}) where ent.id={ent_id} "
                f" and r1.name='{rel1_name}' and r2.name='{rel2_name}' return DISTINCT target.name")
-        logging.info(f"{cql}; {ent_name}")
+        logging.info(f"{cql}; *ent_name:{ent_name}")
         res = graph.run(cql)
         target_name = [ent['target.name'] for ent in res]
         return target_name
@@ -129,7 +133,7 @@ class GraphDB(object):
         cql = (f"match ({start})-[r1:Relation]-({end})-[r2:Relation]-(ent2:Entity) "
                f" where ent.id={ent1_id} and r1.name='{rel1_name}' and r2.name='{rel2_name}' and ent2.id={ent2_id}"
                f"return DISTINCT target.name")
-        logging.info(f"{cql}; {ent1_name},{ent2_name}")
+        logging.info(f"{cql}; *ent_name:{ent1_name},{ent2_name}")
         res = graph.run(cql)
         target_name = [ent['target.name'] for ent in res]
         return target_name

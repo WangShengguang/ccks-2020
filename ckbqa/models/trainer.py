@@ -1,29 +1,21 @@
 import logging
 
-import pandas as pd
 import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
 
 from ckbqa.dataset.data_helper import DataHelper
-from ckbqa.models.bert_match import BertMatch, BertMatch2
+from ckbqa.models.relation_score import BertMatch, BertMatch2
 from ckbqa.utils.saver import Saver
 from config import Config
 
 
 class BaseTrainer(object):
-    def __init__(self):
+    def __init__(self, model_name):
         self.global_step = 0
         self.device = Config.device
-
-    def init_model(self, model):
-        model.to(self.device)  # without this there is no error, but it runs in CPU (instead of GPU).
-        if Config.gpu_nums > 1 and Config.multi_gpu:
-            model = torch.nn.DataParallel(model)
-        self.optimizer = Adam(model.parameters(), lr=Config.learning_rate)
-        self.scheduler = LambdaLR(self.optimizer, lr_lambda=lambda epoch: 1 / (1 + 0.05 * epoch))
-        return model
+        self.model_name = model_name
 
     def backfoward(self, loss, model):
         if Config.gpu_nums > 1 and Config.multi_gpu:
@@ -39,13 +31,13 @@ class BaseTrainer(object):
             self.optimizer.zero_grad()
         return loss
 
-
-class BertmatchTrainer(BaseTrainer):
-    def __init__(self, model_name):
-        super().__init__()
-        self.model_name = model_name
-        self.data_helper = DataHelper()
-        self.saver = Saver(model_name=model_name)
+    def init_model(self, model):
+        model.to(self.device)  # without this there is no error, but it runs in CPU (instead of GPU).
+        if Config.gpu_nums > 1 and Config.multi_gpu:
+            model = torch.nn.DataParallel(model)
+        self.optimizer = Adam(model.parameters(), lr=Config.learning_rate)
+        self.scheduler = LambdaLR(self.optimizer, lr_lambda=lambda epoch: 1 / (1 + 0.05 * epoch))
+        return model
 
     def get_model(self):
         if self.model_name == 'bert_match':  # 20200607双层
@@ -55,13 +47,22 @@ class BertmatchTrainer(BaseTrainer):
             model = BertMatch2()
         else:
             raise ValueError()
+        if hasattr(model, 'bert'):  # bert参数不训练
+            for para in model.bert.parameters():
+                para.requires_grad = False  # bert参数不训练
         return model
+
+
+class Trainer(BaseTrainer):
+    def __init__(self, model_name):
+        super().__init__(model_name)
+        self.model_name = model_name
+        self.data_helper = DataHelper()
+        self.saver = Saver(model_name=model_name)
 
     def train(self):
         model = self.get_model()
         model = self.init_model(model)
-        for para in model.bert.parameters():
-            para.requires_grad = False  # bert参数不训练
         model_path, epoch, step = self.saver.load_model(model, fail_ok=True)
         self.global_step = step
         for q_sents, a_sents, batch_labels in self.data_helper.batch_iter(
@@ -75,21 +76,3 @@ class BertmatchTrainer(BaseTrainer):
                 logging.info(f'save to {model_path}')
             # print('labels: ', batch_labels)
             # print('pred: ', pred)
-
-    # def _predict(self, q_sents, a_sents, batch_labels):
-
-    def predict(self):
-        model = self.get_model()
-        model_path, epoch, step = self.saver.load_model(model, fail_ok=False)
-        logging.info(f'* load model from {model_path}')
-        labels = []
-        preds = []
-        for q_sents, a_sents, batch_labels in self.data_helper.batch_iter(
-                data_type='test', batch_size=256):
-            distances = model(q_sents, a_sents)
-            labels.extend(batch_labels.tolist())
-            preds.extend(distances.tolist())
-            print('aaa')
-        test_df = pd.read_csv(Config.get_sample_csv_path('test', neg_rate=3), nrows=len(preds))
-        test_df['pred'] = preds
-        test_df.to_csv('./pred.csv', encoding='utf_8_sig', index=False)

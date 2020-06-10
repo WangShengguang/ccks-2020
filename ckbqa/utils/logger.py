@@ -1,7 +1,7 @@
 import logging.handlers
 
 
-def logging_config(logging_name='./run.log', stream_log=False, log_level="info"):
+def logging_config(logging_name='./run.log', stream_log=True, log_level="info"):
     """
     :param logging_name:  log名
     :param stream_log: 是否把log信息输出到屏幕,标准输出

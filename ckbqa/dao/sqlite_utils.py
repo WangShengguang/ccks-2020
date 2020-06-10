@@ -8,7 +8,7 @@ from ..utils.tools import singleton
 class SqliteDB(DB):
 
     @try_commit_rollback
-    def get_id_by_entity_name(self, *, entity_name, pure_name):
+    def get_id_by_entity_name(self, entity_name, pure_name):
         sql = 'select entity_name from '
         ws_video = self.select(sql)
         return ws_video

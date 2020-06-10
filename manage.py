@@ -23,12 +23,8 @@ def set_envs(cpu_only, allow_gpus):
 
 def run(model_name, mode):
     logging_config(f'{model_name}_{mode}.log', stream_log=True)
-
-    if model_name == 'qa':
-        from ckbqa.evaluate import evaluate
-        evaluate()
-    from ckbqa.trainer import BertmatchTrainer
-    BertmatchTrainer(model_name).train()
+    from ckbqa.models.trainer import Trainer
+    Trainer(model_name).train()
 
 
 def main():
@@ -45,7 +41,7 @@ def main():
     #
     group = parser.add_mutually_exclusive_group(required=True)  # 一组互斥参数,且至少需要互斥参数中的一个
     #
-    all_models = ['bert_match','bert_match2', 'qa']
+    all_models = ['bert_match', 'bert_match2']
     group.add_argument('--train', type=str, choices=all_models, help="训练")
     group.add_argument('--test', type=str, choices=all_models, help="测试")
     # parse args

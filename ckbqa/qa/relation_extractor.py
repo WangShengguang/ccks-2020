@@ -10,7 +10,7 @@ class RelationExtractor(object):
 
     def __init__(self):
         self.graph_db = GraphDB()
-        # self.sim_predictor = BertMatchPredictor(model_name='bert_match')  # bert_match,bert_match2
+        # self.sim_predictor = RelationScorePredictor(model_name='bert_match')  # bert_match,bert_match2
 
     def get_relations(self, candidate_entities, ent_name, direction='out'):
         onehop_relations = self.graph_db.get_onehop_relations_by_entName(ent_name, direction=direction)

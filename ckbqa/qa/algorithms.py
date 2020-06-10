@@ -13,14 +13,14 @@ def sequences_set_similar(s1: Set, s2: Set):
     return overlap, jaccard
 
 
-class Algorithm(object):
+class Algorithms(object):
     def __init__(self):
         self.invalid_names = {'是什么', ''}  # 汽车的动力是什么
 
     def get_most_overlap_path(self, q_text, paths):
         # 从排名前几的tuples里选择与问题overlap最多的
         max_score = 0
-        top_path = paths[0]
+        top_path = []
         q_words = set(q_text)
         pure_qtext = legal_char_partten.sub('', q_text)
         for path in paths:

@@ -1,4 +1,6 @@
+import logging
 import os
+from datetime import datetime
 from pathlib import Path
 
 import torch
@@ -10,6 +12,7 @@ raw_data_dir = os.path.join(data_dir, 'raw_data')
 
 output_dir = os.path.join(root_dir, "output")
 ckpt_dir = os.path.join(output_dir, "ckpt")
+result_dir = os.path.join(output_dir, 'result')
 
 # 原始数据
 mention2ent_txt = os.path.join(raw_data_dir, 'PKUBASE', 'pkubase-mention2ent.txt')
@@ -54,6 +57,8 @@ class DataConfig(object):
     entity_score_model_pkl = os.path.join(data_dir, 'entity_score_model.pkl')
     #
     neo4j_query_cache = os.path.join(data_dir, 'neo4j_query_cache.json')
+
+    #
 
     @staticmethod
     def get_sample_csv_path(data_type, neg_rate):
@@ -100,4 +105,45 @@ class Config(TorchConfig, DataConfig, Parms):
     test_count = 10  # 10*2*13589
 
 
-__all__ = ['Config']
+class ResultSaver(object):
+    """输出文件管理；自动生成新文件名；避免覆盖"""
+
+    def __init__(self, new_file=True):
+        self.new_file = new_file
+
+    def _get_path(self, file_name):
+        date_str = str(datetime.today())[:10]  #
+        date_str = ''.join(date_str.split('-'))
+        date_str = '20200609' #临时修改
+        path = os.path.join(result_dir, f"{date_str}-{file_name}")
+        if self.new_file:
+            num = 1
+            while os.path.isfile(path):
+                path = os.path.join(result_dir, f"{date_str}-{num}-{file_name}")
+                num += 1
+        else:
+            num = 20
+            while num and not os.path.isfile(path):
+                path = os.path.join(result_dir, f"{date_str}-{num}-{file_name}")
+                num -= 1
+                print(path, num)
+            if not os.path.isfile(path):
+                raise FileNotFoundError(path)
+        logging.info(f'* {path}')
+        return path
+
+    @property
+    def train_result_csv(self):
+        print('train_result_csv')
+        path = self._get_path('train_answer_result.csv')
+        return path
+
+    @property
+    def valid_result_csv(self):
+        path = self._get_path('valid_result.csv')
+        return path
+
+    @property
+    def submmit_result_txt(self):
+        path = self._get_path('submmit_result.txt')
+        return path
