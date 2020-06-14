@@ -1,8 +1,9 @@
+"""现有模型封装；提供给预测使用"""
 import logging
 from typing import List
 
-from ckbqa.dataset.data_helper import DataHelper
-from ckbqa.models.relation_score import BertMatch, BertMatch2
+from ckbqa.models.data_helper import DataHelper
+from ckbqa.models.relation_score.model import BertMatch, BertMatch2
 from ckbqa.utils.saver import Saver
 
 

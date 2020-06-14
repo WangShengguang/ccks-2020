@@ -15,25 +15,29 @@
 
 ├── dao //数据库接口，准备做辅助缓存  
 ├── dataset //数据相关  
-│ ├── data_helper.py //train数据准备，feed给模型    
 │ ├── data_prepare.py //train数据预处理，将给定训练数据做各种处理，构造字典等  
 │ └── kb_data_prepare.py //图谱数据预处理，将给定图谱做各种转换，构造字典等  
 ├── layers //损失函数等    
 ├── models //模型  
-│ ├── entity_score.py // 对识别出的主实体打分模型    
-│ ├── evaluate.py // 评价测试模块，载入训练好的模型，对输入做预测；提供一份模型载入的类封装    
+│ ├── entity_score // 对识别出的主实体打分模型    
+│ │ └── model.py // 模型定义    
 │ ├── ner.py //主实体识别模型  
+│ │ └── model.py // 模型定义    
 │ ├── relation_score.py //对实体关联的关系打分的模型    
-│ └── trainer.py //训练模块；模型初始化到训练    
+│ │ ├── model.py // 模型定义    
+│ │ ├── predictor.py // 模型封装用作后续预测          
+│ │ └── trainer.py // 模型训练   
+│ ├── base_trainer.py //训练模块；模型初始化到训练    
+│ └── data_helper.py //train数据处理成合适的格式，feed给模型    
 ├── qa //问答模块   
 │ ├── algorithms.py // 后处理算法     
 │ ├── cache.py // 大文件，在单例模式缓存；避免多次载入内存；ent2id等放在这里，提供给其他模块公共使用    
+│ ├── el.py //entity link，实体链接（主实体识别模块）      
 │ ├── entity_score.py // 对识别出的主实体打分模型    
 │ ├── evaluation_matrics.py // 指标计算      
 │ ├── lac_tools.py // 分词模块自定义优化等     
 │ ├── neo4j_graph.py //图数据库查询缓存等   
 │ ├── qa.py //问答接口，将其他模块组装到这里完成问答     
-│ ├── recognizer.py //主实体识别模块     
 │ └── relation_extractor.py //实体关联关系识别     
 ├── utils //通用工具   
 ├── docs //文档   
@@ -41,6 +45,7 @@
 ├── tests //测试  
 ├── config.py //所有数据路径和少量全局配置    
 ├── data.py //所有数据处理的入口文件    
+├── evaluate.py //模块评测入口文件     
 ├── manage.py //所有模型训练的入口文件    
 ├── qa.py //问答入口文件   
 ├── README.md //说明文档   
@@ -63,13 +68,13 @@ neo4j数据库
 - 安装  
     https://segmentfault.com/a/1190000015389941
 
-- 运行 
-    cd /home/wangshengguang/neo4j-community-3.4.5/bin
-    ./neo4j start
-    ./neo4j stop
+- 运行  
+    cd /home/wangshengguang/neo4j-community-3.4.5/bin  
+    ./neo4j start  
+    ./neo4j stop  
     
 - 数据导入   
-    cd /home/wangshengguang/neo4j-community-3.4.5/bin  
+    cd /home/wangshengguang/neo4j-community-3.4.5/bin    
     ./neo4j-admin import --database=graph.db --nodes /home/wangshengguang/ccks-2020/data/graph_entity.csv  --relationships /home/wangshengguang/ccks-2020/data/graph_relation.csv --ignore-duplicate-nodes=true --id-type INTEGER --ignore-missing-nodes=true  
  
 - 创建索引  
@@ -102,14 +107,14 @@ CREATE INDEX ON :Relation(name)
 - http://nlpprogress.com/
 
 ## 3. 数据分析及预处理  
-
+以下提到所有路径都是/home/wangshengguang/下的相对路径
 ### 3.1 原始数据 
 原始数据存放在data/roaw_data 目录下
-1. 问答数据 data\raw_data\ccks_2020_7_4_Data下
-    1. 有标注训练集15999：data\raw_data\ccks_2020_7_4_Data\task1-4_train_2020.txt
-    2. 无标注验证集（做提交）1529：data\raw_data\ccks_2020_7_4_Data\task1-4_valid_2020.questions
-2. 图谱数据 data\raw_data\PKUBASE下
-    1. 所有三元组66499745:data\raw_data\PKUBASE\pkubase-complete.txt
+1. 问答数据 data/raw_data/ccks_2020_7_4_Data下
+    1. 有标注训练集15999：data/raw_data/ccks_2020_7_4_Data/task1-4_train_2020.txt
+    2. 无标注验证集（做提交）1529：data/raw_data/ccks_2020_7_4_Data/task1-4_valid_2020.questions
+2. 图谱数据 data/raw_data/PKUBASE下
+    1. 所有三元组66499745:data/raw_data/PKUBASE/pkubase-complete.txt
 
 ### 3.2 数据分析 
      三元组中实体分两类：<实体>和"属性"; 
@@ -136,7 +141,7 @@ CREATE INDEX ON :Relation(name)
     RelationExtractor
 
 
-### 1.3 后处理及查询模块
+### 4.3 后处理模块
     Algorithms
 
 
@@ -147,7 +152,7 @@ CREATE INDEX ON :Relation(name)
     ssh -f wangshengguang@119.3.178.138 -N -L 7474:localhost:7474
     ssh -f wangshengguang@119.3.178.138 -N -L 7687:localhost:7687
 
-    访问：http://localhost:7474/browser/
+    访问：[http://localhost:7474/browser/](http://localhost:7474/browser/)
 
 
 

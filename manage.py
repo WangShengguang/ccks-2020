@@ -24,10 +24,10 @@ def set_envs(cpu_only, allow_gpus):
 def run(model_name, mode):
     logging_config(f'{model_name}_{mode}.log', stream_log=True)
     if model_name in ['bert_match', 'bert_match2']:
-        from ckbqa.models.trainer import Trainer
-        Trainer(model_name).train_match_model()
+        from ckbqa.models.relation_score.trainer import RelationScoreTrainer
+        RelationScoreTrainer(model_name).train_match_model()
     elif model_name == 'entity_score':
-        from ckbqa.models.entity_score import EntityScore
+        from ckbqa.models.entity_score.model import EntityScore
         EntityScore().train()
 
 
@@ -51,7 +51,8 @@ def main():
     # parse args
     args = parser.parse_args()
     #
-    set_envs(args.cpu_only, args.allow_gpus)
+    set_envs(args.cpu_only, args.allow_gpus)  # 设置环境变量等
+    #
     if args.train:
         model_name = args.train
         mode = 'train'
@@ -69,5 +70,6 @@ if __name__ == '__main__':
         nohup python manage.py --train bert_match &>bert_match.out&
         nohup python manage.py --train entity_score &>entity_score.out&
     """
-
+    # from ckbqa.utils.tools import ProcessManager #实时查看内存占用情况
+    # ProcessManager().run()
     main()

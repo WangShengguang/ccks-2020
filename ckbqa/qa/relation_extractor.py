@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 
-from ckbqa.models.evaluate import RelationScorePredictor
+from ckbqa.models.relation_score.predictor import RelationScorePredictor
 from ckbqa.qa.neo4j_graph import GraphDB
 from ckbqa.utils.decorators import singleton
 

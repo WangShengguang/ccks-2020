@@ -15,6 +15,7 @@ from config import Config, mention2ent_txt, kb_triples_txt
 
 
 def iter_triples(tqdm_prefix=''):
+    """迭代图谱的三元组；"""
     rdf_patten = re.compile(r'(["<].*?[>"])')
     ent_partten = re.compile('<(.*?)>')
     attr_partten = re.compile('"(.*?)"')
@@ -48,7 +49,9 @@ def iter_triples(tqdm_prefix=''):
 
 
 def fit_triples():
-    """entity,relation map to id"""
+    """entity,relation map to id；
+        实体到id的映射词典
+    """
     logging.info('fit_triples start ...')
     entities = set()
     relations = set()
@@ -69,7 +72,7 @@ def fit_triples():
 
 
 def map_mention_entity():
-    """mention2ent； 4 min"""
+    """mention2ent； 4 min； mention到实体的映射"""
     logging.info('map_mention_entity start ...')
     ent2mention = defaultdict(set)
     mention2ent = defaultdict(set)
@@ -91,7 +94,7 @@ def map_mention_entity():
 
 
 def candidate_words():
-    """实体的属性和类型；作为尾实体候选; 7min"""
+    """实体的属性和类型映射字典；作为尾实体候选; 7min"""
     logging.info('candidate_words gen start ...')
     ent2types_dict = defaultdict(set)
     ent2attrs_dict = defaultdict(set)
@@ -113,7 +116,9 @@ def candidate_words():
 
 
 def _get_top_counter():
-    """26G，高频实体和mention，作为后期筛选和lac字典"""
+    """26G，高频实体和mention，作为后期筛选和lac字典；
+        统计实体和mention出现的次数； 方便取top作为最终自定义分词的词典；
+    """
     logging.info('kb_count_top_dict start ...')
     if not (os.path.isfile(Config.entity2count_json) and
             os.path.isfile(Config.relation2count_json)):
@@ -146,6 +151,7 @@ def _get_top_counter():
 
 
 def create_lac_custom_dict():
+    """生成自定义分词词典"""
     logging.info('create_lac_custom_dict start...')
     ent_counter, rel_counter, mention_counter = _get_top_counter()
     mention_count = mention_counter.most_common(50 * 10000)  #
@@ -184,7 +190,7 @@ def create_lac_custom_dict():
 
 
 def create_graph_csv():
-    """
+    """  生成数据库导入文件
     cd /home/wangshengguang/neo4j-community-3.4.5/bin/
     ./neo4j-admin import --database=graph.db --nodes /home/wangshengguang/ccks-2020/data/graph_entity.csv  --relationships /home/wangshengguang/ccks-2020/data/graph_relation2.csv --ignore-duplicate-nodes=true --id-type INTEGER --ignore-missing-nodes=true
     CREATE CONSTRAINT ON (ent:Entity) ASSERT ent.id IS UNIQUE;

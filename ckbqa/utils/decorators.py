@@ -1,3 +1,4 @@
+import gc
 import logging
 import threading
 import traceback
@@ -16,11 +17,15 @@ def synchronized(func):
     return lock_func
 
 
+# singleton_classes = set()
+
+
 def singleton(cls):
     """
         只初始化一次；new和init都只调用一次
     """
     instances = {}  # 当类创建完成之后才有内容
+    # singleton_classes.add(cls)
 
     @synchronized
     @wraps(cls)
@@ -29,6 +34,7 @@ def singleton(cls):
             logging.info(f"{cls.__name__} init start ...")
             instances[cls] = cls(*args, **kw)
             logging.info(f"{cls.__name__} init done ...")
+            gc.collect()
         return instances[cls]
 
     return get_instance

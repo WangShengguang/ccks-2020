@@ -14,20 +14,24 @@ from config import Config
 
 
 class EntityScore(object):
-    def __init__(self, load_model=False):
-        if load_model:
+    """
+        主实体打分排序；
+    """
+
+    def __init__(self, load_pretrain_model=False):
+        if load_pretrain_model:
             self.model: LogisticRegression = pkl_load(Config.entity_score_model_pkl)
 
     def gen_train_data(self):
         X_train = []
         Y_label = []
-        from ckbqa.qa.recognizer import Recognizer  # 避免循环导入
-        recognizer = Recognizer()
+        from ckbqa.qa.el import EL  # 避免循环导入
+        el = EL()
         for q, sparql, a in load_data(tqdm_prefix='EntityScore train data '):
             # a_entities = entity_pattern.findall(a)
             q_entities = set(entity_pattern.findall(sparql) + attr_pattern.findall(sparql))  # attr
             q_text = question_patten.findall(q)[0]
-            candidate_entities = recognizer.get_candidate_entities(q_text)
+            candidate_entities = el.el(q_text)
             for ent_name, feature_dict in candidate_entities.items():
                 feature = feature_dict['feature']
                 label = 1 if ent_name in q_entities else 0  # 候选实体有的不在答案中

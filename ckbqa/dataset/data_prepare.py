@@ -1,11 +1,9 @@
-import random
 import re
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
-from ckbqa.utils.tools import json_dump, json_load
+from ckbqa.utils.tools import json_dump
 from config import DataConfig, raw_train_txt
 
 entity_pattern = re.compile(r'(<.*?>)')  # 保留<>
@@ -70,28 +68,3 @@ def data_convert():
         data['a_entities'].append(a_entities)
         data['a_strs'].append(a_strs)
     pd.DataFrame(data).to_csv(DataConfig.data_csv, encoding='utf_8_sig', index=False)
-
-
-def data2samples(neg_rate=3, test_size=0.1):
-    questions = []
-    sim_questions = []
-    labels = []
-    all_relations = list(json_load(DataConfig.relation2id))
-    _entity_pattern = re.compile(r'["<](.*?)[>"]')
-    for q, sparql, a in load_data(tqdm_prefix='data2samples '):
-        q_text = question_patten.findall(q)[0]
-        q_entities = _entity_pattern.findall(sparql)
-        questions.append(q_text)
-        sim_questions.append('的'.join(q_entities))
-        labels.append(1)
-        #
-        for neg_relation in random.sample(all_relations, neg_rate):
-            questions.append(q_text)
-            neg_question = '的'.join(q_entities[:-1] + [neg_relation])  # 随机替换 <关系>
-            sim_questions.append(neg_question)
-            labels.append(0)
-    data_df = pd.DataFrame({'question': questions, 'sim_question': sim_questions, 'label': labels})
-    data_df.to_csv(DataConfig.sample_csv, encoding='utf_8_sig', index=False)
-    train_df, test_df = train_test_split(data_df, test_size=test_size)
-    test_df.to_csv(DataConfig.get_sample_csv_path('test', neg_rate), encoding='utf_8_sig', index=False)
-    train_df.to_csv(DataConfig.get_sample_csv_path('train', neg_rate), encoding='utf_8_sig', index=False)

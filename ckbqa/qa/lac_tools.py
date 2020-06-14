@@ -1,12 +1,77 @@
+import gc
 import logging
 import os
 
+import jieba
 from LAC import LAC
 from LAC.ahocorasick import Ahocorasick
+from tqdm import tqdm
 
 from ckbqa.utils.decorators import singleton
-from ckbqa.utils.tools import tqdm_iter_file, pkl_dump, pkl_load
+from ckbqa.utils.tools import tqdm_iter_file, pkl_dump, pkl_load, json_load, json_dump
 from config import Config
+
+
+class Ngram(object):
+    def __init__(self):
+        pass
+
+    def ngram(self, text, n):
+        ngrams = [text[i:i + n] for i in range(len(text) - n + 1)]
+        return ngrams
+
+    def get_all_grams(self, text):
+        for n in range(2, len(text)):
+            for ngram in self.ngram(text, n):
+                yield ngram
+                # for gram in ngrams:
+                #     yield gram
+
+
+@singleton
+class JiebaLac(object):
+    def __init__(self, load_custom_dict=True):
+        # jieba.enable_paddle()  # 启动paddle模式。 0.40版之后开始支持，早期版本不支持
+        if load_custom_dict:
+            self.load_custom_dict()
+
+    def load_custom_dict(self):
+        if not os.path.isfile(Config.jieba_custom_dict):
+            all_ent_mention_words = set(json_load(Config.mention2count_json).keys())
+            entity_set = set(json_load(Config.entity2id).keys())
+            for ent in tqdm(entity_set, total=len(entity_set), desc='create jieba words '):
+                if ent.startswith('<'):
+                    ent = ent[1:-1]
+                all_ent_mention_words.add(ent)
+            # FREQ,total,
+            # 模仿jieba.add_word，重写逻辑，加速
+            # jieba.dt.FREQ = {}
+            # jieba.dt.total = 0
+            for word in tqdm(all_ent_mention_words, desc='jieba custom create '):
+                freq = len(word) * 3
+                jieba.dt.FREQ[word] = freq
+                jieba.dt.total += freq
+                for ch in range(len(word)):
+                    wfrag = word[:ch + 1]
+                    if wfrag not in jieba.dt.FREQ:
+                        jieba.dt.FREQ[wfrag] = 0
+            del all_ent_mention_words
+            gc.collect()
+            json_dump({'dt.FREQ': jieba.dt.FREQ, 'dt.total': jieba.dt.total},
+                      Config.jieba_custom_dict)
+            logging.info('create jieba custom dict done ...')
+        # load
+        jieba_custom = json_load(Config.jieba_custom_dict)
+        jieba.dt.check_initialized()
+        jieba.dt.FREQ = jieba_custom['dt.FREQ']
+        jieba.dt.total = jieba_custom['dt.total']
+        logging.info('load jieba custom dict done ...')
+
+    def cut_for_search(self, text):
+        return jieba.cut_for_search(text)
+
+    def cut(self, text):
+        return jieba.cut(text)
 
 
 @singleton
@@ -31,19 +96,21 @@ class BaiduLac(LAC):
         return Config.lac_model_pkl
 
     def _load_customization(self):
-        self.custom = Customization()
-        if self.reload or not os.path.isfile(Config.lac_model_pkl):
-            self.custom.load_customization(self.customization_path)  # 35万2min;100万，20min;
-            self._save_customization()
-        else:
-            logging.info('load lac customization start ...')
-            parms_dict = pkl_load(Config.lac_model_pkl)
-            self.custom.dictitem = parms_dict['dictitem']  # dict
-            self.custom.ac = Ahocorasick()
-            for phrase in parms_dict['dictitem']:
-                self.custom.ac.add_word(phrase)
-            self.custom.ac.make()
-            logging.info('loaded lac customization Done ...')
+        logging.info('暂停载入BaiduLac自定词典 ...')
+        return
+        # self.custom = Customization()
+        # if self.reload or not os.path.isfile(Config.lac_model_pkl):
+        #     self.custom.load_customization(self.customization_path)  # 35万2min;100万，20min;
+        #     self._save_customization()
+        # else:
+        #     logging.info('load lac customization start ...')
+        #     parms_dict = pkl_load(Config.lac_model_pkl)
+        #     self.custom.dictitem = parms_dict['dictitem']  # dict
+        #     self.custom.ac = Ahocorasick()
+        #     for phrase in tqdm(parms_dict['dictitem'], desc='load baidu lac '):
+        #         self.custom.ac.add_word(phrase)
+        #     self.custom.ac.make()
+        #     logging.info('loaded lac customization Done ...')
 
 
 class Customization(object):

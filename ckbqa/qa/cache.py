@@ -8,7 +8,7 @@ class Memory(object):
     def __init__(self):
         self.entity2id = json_load(Config.entity2id)
         self.mention2entity = json_load(Config.mention2ent_json)
-        self.all_attrs = set(json_load(Config.all_attrs_json))
+        # self.all_attrs = set(json_load(Config.all_attrs_json))
 
     def get_entity_id(self, ent_name):
         if ent_name in self.entity2id:

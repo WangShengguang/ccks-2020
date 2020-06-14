@@ -28,9 +28,9 @@ def kb_data_prepare():
     from ckbqa.dataset.kb_data_prepare import create_graph_csv
     fit_triples()  # 生成字典
     candidate_words()  # 属性
-    create_lac_custom_dict()  #
+    create_lac_custom_dict()  # 自定义分词词典
 
-    create_graph_csv()
+    create_graph_csv()  # 生成数据库导入文件
     from examples.lac_test import lac_model
     lac_model()
 
@@ -68,5 +68,6 @@ if __name__ == '__main__':
         python manage.py --data_prepare
         nohup python manage.py --kb_data_prepare &>kb_data_prepare.out &
     """
-
+    # from ckbqa.utils.tools import ProcessManager #实时查看内存占用情况
+    # ProcessManager().run()
     main()

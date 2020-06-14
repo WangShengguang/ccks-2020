@@ -1,5 +1,4 @@
 import gc
-import json
 import logging
 import os
 import pickle
@@ -12,6 +11,8 @@ import time
 import traceback
 
 import psutil
+import orjson
+# import ujson as json
 from tqdm import tqdm
 
 
@@ -36,15 +37,22 @@ def pkl_dump(obj: object, file_path: str, recursionlimit='default'):
     sys.setrecursionlimit(limit['default'])
 
 
-def json_dump(dict_data, save_path, override_exist=True):
-    if override_exist or os.path.isfile(save_path):
-        with open(save_path, "w", encoding="utf-8") as f:
-            json.dump(dict_data, f, ensure_ascii=False, indent=4, sort_keys=True)
+def json_load(path):
+    with open(path, 'rb') as f:
+        obj = orjson.loads(f.read())
+    gc.collect()
+    return obj
 
 
-def json_load(path, object_hook=None):
-    with open(path, 'r', encoding='utf-8') as f:
-        return json.load(f, object_hook=object_hook)
+def json_dump(dict_data, save_path, override_exist=True, indent=4, sort_keys=False, save_memory=False):
+    if override_exist or not os.path.isfile(save_path):
+        with open(save_path, "wb") as f:
+            strs = orjson.dumps(dict_data, option=orjson.OPT_INDENT_2)
+            f.write(strs)
+            # if save_memory:
+            #     json.dump(dict_data, f, ensure_ascii=False)
+            # else:
+            #     json.dump(dict_data, f, ensure_ascii=False, indent=indent, sort_keys=sort_keys)
 
 
 def get_file_linenums(file_name):

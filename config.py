@@ -29,9 +29,8 @@ class DataConfig(object):
     word2id_json = os.path.join(data_dir, 'word2id.json')
     q_entity2id_json = os.path.join(data_dir, 'q_entity2id.json')
     a_entity2id_json = os.path.join(data_dir, 'a_entity2id.json')
-    sample_csv = os.path.join(data_dir, 'sample.csv')
     #
-    data_csv = os.path.join(data_dir, 'data.csv')
+    data_csv = os.path.join(data_dir, 'data.csv')  # 训练数据做了一点格式转换
     #
     mention2ent_json = os.path.join(data_dir, 'mention2ent.json')
     ent2mention_json = os.path.join(data_dir, 'ent2mention.json')
@@ -46,12 +45,13 @@ class DataConfig(object):
     #
     lac_custom_dict_txt = os.path.join(data_dir, 'lac_custom_dict.txt')
     lac_attr_custom_dict_txt = os.path.join(data_dir, 'lac_attr_custom_dict.txt')
+    jieba_custom_dict = os.path.join(data_dir, 'jieba_custom_dict.json')
     # graph_pkl = os.path.join(data_dir, 'graph.pkl')
     graph_entity_csv = os.path.join(data_dir, 'graph_entity.csv')  # 图谱导入
     graph_relation_csv = os.path.join(data_dir, 'graph_relation.csv')  # 图谱导入
     entity2types_json = os.path.join(data_dir, 'entity2type.json')
     entity2attrs_json = os.path.join(data_dir, 'entity2attr.json')
-    all_attrs_json = os.path.join(data_dir, 'all_attrs.json')
+    all_attrs_json = os.path.join(data_dir, 'all_attrs.json')  # 所有属性
     #
     lac_model_pkl = os.path.join(data_dir, 'lac_model.pkl')
     # EntityScore model
@@ -61,13 +61,14 @@ class DataConfig(object):
     neo4j_query_cache = os.path.join(data_dir, 'neo4j_query_cache.json')
 
     #
+    relation_score_sample_csv = os.path.join(data_dir, 'sample.csv')
 
     @staticmethod
-    def get_sample_csv_path(data_type, neg_rate):
+    def get_relation_score_sample_csv(data_type, neg_rate):
         if data_type == 'train':
-            file_path = Path(DataConfig.sample_csv).with_name(f'train.1_{neg_rate}.csv')
+            file_path = Path(DataConfig.relation_score_sample_csv).with_name(f'train.1_{neg_rate}.csv')
         else:
-            file_path = Path(DataConfig.sample_csv).with_name('test.csv')
+            file_path = Path(DataConfig.relation_score_sample_csv).with_name('test.csv')
         return str(file_path)
 
 
@@ -83,7 +84,7 @@ class TorchConfig(object):
 
 class Parms(object):
     #
-    # learning_rate = 0.001
+    learning_rate = 0.001
     # #
     # min_epoch_nums = 1
     # max_epoch_nums = 10
@@ -127,8 +128,9 @@ class ResultSaver(object):
     def _find_paths(self, file_name):
         paths = [str(_path) for _path in
                  Path(result_dir).rglob(f'*{file_name}')]
-        _path = sorted(paths, reverse=True)
-        return _path
+        _paths = sorted(paths, reverse=True)
+        logging.info(f'* get path: {len(_paths)}')
+        return _paths
 
     @property
     def train_result_csv(self):
@@ -149,8 +151,8 @@ class ResultSaver(object):
         return path
 
     @property
-    def submmit_result_txt(self):
-        file_name = 'submmit_result.txt'
+    def submit_result_txt(self):
+        file_name = 'submit_result.txt'
         if self.new_path:
             path = self._get_new_path(file_name)
         else:
