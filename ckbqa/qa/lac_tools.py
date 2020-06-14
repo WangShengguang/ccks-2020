@@ -8,7 +8,7 @@ from LAC.ahocorasick import Ahocorasick
 from tqdm import tqdm
 
 from ckbqa.utils.decorators import singleton
-from ckbqa.utils.tools import tqdm_iter_file, pkl_dump, pkl_load, json_load, json_dump
+from ckbqa.utils.tools import tqdm_iter_file, pkl_dump, json_load, json_dump
 from config import Config
 
 

@@ -109,10 +109,13 @@ class Config(TorchConfig, DataConfig, Parms):
 
 
 class ResultSaver(object):
-    """输出文件管理；自动生成新文件名；避免覆盖"""
+    """输出文件管理；自动生成新文件名；避免覆盖
+        自动查找已存在的文件
+    """
 
-    def __init__(self, new_path=True):
-        self.new_path = new_path
+    def __init__(self, find_exist_path=False):
+        os.makedirs(result_dir, exist_ok=True)
+        self.find_exist_path = find_exist_path
 
     def _get_new_path(self, file_name):
         date_str = arrow.now().format("YYYYMMDD")
@@ -122,39 +125,36 @@ class ResultSaver(object):
         while os.path.isfile(path):
             path = os.path.join(result_dir, f"{date_str}-{num}-{file_name}")
             num += 1
-        logging.info(f'* get path: {path}')
         return path
 
     def _find_paths(self, file_name):
         paths = [str(_path) for _path in
                  Path(result_dir).rglob(f'*{file_name}')]
         _paths = sorted(paths, reverse=True)
-        logging.info(f'* get path: {len(_paths)}')
         return _paths
+
+    def get_path(self, file_name):
+        if self.find_exist_path:
+            path = self._find_paths(file_name)
+        else:
+            path = self._get_new_path(file_name)
+        logging.info(f'* get path: {path}')
+        return path
 
     @property
     def train_result_csv(self):
         file_name = 'train_answer_result.csv'
-        if self.new_path:
-            path = self._get_new_path(file_name)
-        else:
-            path = self._find_paths(file_name)
+        path = self.get_path(file_name)
         return path
 
     @property
     def valid_result_csv(self):
         file_name = 'valid_result.csv'
-        if self.new_path:
-            path = self._get_new_path(file_name)
-        else:
-            path = self._find_paths(file_name)
+        path = self.get_path(file_name)
         return path
 
     @property
     def submit_result_txt(self):
         file_name = 'submit_result.txt'
-        if self.new_path:
-            path = self._get_new_path(file_name)
-        else:
-            path = self._find_paths(file_name)
+        path = self.get_path(file_name)
         return path

@@ -1,5 +1,4 @@
 """实体链接模块"""
-import gc
 from collections import defaultdict
 from typing import List, Dict
 
@@ -21,15 +20,10 @@ class CEG(object):
     """
 
     def __init__(self):
-        # async_init_singleton_class([JiebaLac, BaiduLac, Memory])
-        print('start ...')
         # self.jieba = JiebaLac(load_custom_dict=True)
-        gc.collect()
-        print('jieba init done ...')
         self.lac = BaiduLac(mode='lac', _load_customization=True)
         self.memory = Memory()
         self.ngram = Ngram()
-        print(' memo init  done ...')
         self.mention_stop_words = {'是什么', '在哪里', '哪里', '什么', '提出的', '有什么', '国家', '哪个', '所在',
                                    '培养出', '为什么', '什么时候', '人', '你知道', '都包括', '是谁', '告诉我',
                                    '又叫做'}
@@ -38,7 +32,7 @@ class CEG(object):
         self.main_tags = {'n', 'an', 'nw', 'nz', 'PER', 'LOC', 'ORG', 'TIME',
                           'vn', 'v'}
 
-    def get_ent2mention(self, q_text):
+    def get_ent2mention(self, q_text: str) -> dict:
         '''
                 标签	含义	标签	含义	标签	含义	标签	含义
                 n	普通名词	f	方位名词	s	处所名词	nw	作品名
@@ -67,7 +61,7 @@ class CEG(object):
             # print(gram)
         return entity2mention
 
-    def seg_text(self, text):
+    def seg_text(self, text: str) -> List[str]:
         return self.lac.run(text)[0]
 
     # def _get_ent2mention(self, text: str) -> Dict:
@@ -107,7 +101,7 @@ class ED(object):
         # self.entity_score = EntityScore()
         self.entity_score = EntityScore(load_pretrain_model=True)
 
-    def ent_rel_similar(self, question: str, entity: str, relations: List):
+    def ent_rel_similar(self, question: str, entity: str, relations: List) -> List:
         '''
         抽取每个实体或属性值2hop内的所有关系，来跟问题计算各种相似度特征
         input:
@@ -136,7 +130,7 @@ class ED(object):
         # 实体名和问题的overlap除以实体名长度的比例
         return qestion_ent_sim + qestion_rel_sim
 
-    def get_entity_feature(self, q_text, ent_name):
+    def get_entity_feature(self, q_text: str, ent_name: str):
         # 得到实体两跳内的所有关系
         one_hop_out_rel_names = self.graph_db.get_onehop_relations_by_entName(ent_name, direction='out')
         two_hop_out_rel_names = self.graph_db.get_twohop_relations_by_entName(ent_name, direction='out')
@@ -173,11 +167,15 @@ class ED(object):
 
     def subject_score_topn(self, candidate_entities: dict, top_k=10):
         '''
-            :candidate_entities  {ent: }
+            :candidate_entities  {ent: {'mention':mention},
+                                        'feature':[...],
+                                  ent2:...,
+                                  ...
+                                 }
         输入候选主语和对应的特征，使用训练好的模型进行打分，排序后返回前topn个候选主语
         '''
-        top_k = len(candidate_entities)  # TODO 不做筛选，保留所有实体；目前筛选效果不好
-        if top_k >= len(candidate_entities):
+        top_k = len(candidate_entities)  # TODO 后需删除；不做筛选，保留所有实体；目前筛选效果不好；
+        if top_k >= len(candidate_entities):  # 太少则不作筛选
             return candidate_entities
         entities = []
         features = []

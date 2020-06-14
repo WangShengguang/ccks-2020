@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+from typing import Tuple, Dict, List
 
 import numpy as np
 
@@ -15,7 +16,7 @@ class RelationExtractor(object):
         self.graph_db = GraphDB()
         self.sim_predictor = RelationScorePredictor(model_name='bert_match')  # bert_match,bert_match2
 
-    def get_relations(self, candidate_entities, ent_name, direction='out'):
+    def get_relations(self, candidate_entities, ent_name, direction='out') -> Tuple:
         onehop_relations = self.graph_db.get_onehop_relations_by_entName(ent_name, direction=direction)
         twohop_relations = self.graph_db.get_twohop_relations_by_entName(ent_name, direction=direction)
         mention = candidate_entities[ent_name]['mention']
@@ -31,7 +32,7 @@ class RelationExtractor(object):
             candidate_paths.append([ent_name] + rels)
         return candidate_paths, candidate_sents
 
-    def get_ent_relations(self, q_text, candidate_entities):
+    def get_ent_relations(self, q_text: str, candidate_entities: Dict) -> Tuple:
         """
         :param q_text:
         :top_k 10 ; out 10, in 10
@@ -55,9 +56,9 @@ class RelationExtractor(object):
         _in_paths = self.relation_score_topn(q_text, candidate_out_paths, candidate_out_sents)
         return _out_paths, _in_paths
 
-    def relation_score_topn(self, q_text, candidate_paths, candidate_sents, top_k=10):
-        top_k = len(candidate_sents)  # TODO 不做筛选，保留所有路径；目前筛选效果不好
-        if top_k >= len(candidate_sents):
+    def relation_score_topn(self, q_text: str, candidate_paths, candidate_sents, top_k=10) -> List:
+        top_k = len(candidate_sents)  # TODO 后需删除；不做筛选，保留所有路径；目前筛选效果不好
+        if top_k >= len(candidate_sents):  # 太少则不作筛选
             return candidate_paths
         if candidate_sents:
             sim_scores = self.sim_predictor.predict(q_text, candidate_sents)  # 目前算法不好，score==1

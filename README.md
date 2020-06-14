@@ -21,20 +21,20 @@
 ├── models //模型  
 │ ├── entity_score // 对识别出的主实体打分模型    
 │ │ └── model.py // 模型定义    
-│ ├── ner.py //主实体识别模型  
+│ ├── ner //主实体识别模型  
 │ │ └── model.py // 模型定义    
-│ ├── relation_score.py //对实体关联的关系打分的模型    
+│ ├── relation_score //对实体关联的关系打分的模型    
 │ │ ├── model.py // 模型定义    
 │ │ ├── predictor.py // 模型封装用作后续预测          
 │ │ └── trainer.py // 模型训练   
 │ ├── base_trainer.py //训练模块；模型初始化到训练    
-│ └── data_helper.py //train数据处理成合适的格式，feed给模型    
+│ ├── data_helper.py //train数据处理成合适的格式，feed给模型    
+│ └── evaluation_matrics.py // 指标计算      
 ├── qa //问答模块   
 │ ├── algorithms.py // 后处理算法     
 │ ├── cache.py // 大文件，在单例模式缓存；避免多次载入内存；ent2id等放在这里，提供给其他模块公共使用    
 │ ├── el.py //entity link，实体链接（主实体识别模块）      
 │ ├── entity_score.py // 对识别出的主实体打分模型    
-│ ├── evaluation_matrics.py // 指标计算      
 │ ├── lac_tools.py // 分词模块自定义优化等     
 │ ├── neo4j_graph.py //图数据库查询缓存等   
 │ ├── qa.py //问答接口，将其他模块组装到这里完成问答     

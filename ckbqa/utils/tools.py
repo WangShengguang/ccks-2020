@@ -10,9 +10,8 @@ import threading
 import time
 import traceback
 
+import orjson  # faster than json,ujson
 import psutil
-import orjson
-# import ujson as json
 from tqdm import tqdm
 
 
@@ -44,10 +43,10 @@ def json_load(path):
     return obj
 
 
-def json_dump(dict_data, save_path, override_exist=True, indent=4, sort_keys=False, save_memory=False):
+def json_dump(dict_data, save_path, override_exist=True):
     if override_exist or not os.path.isfile(save_path):
+        strs = orjson.dumps(dict_data, option=orjson.OPT_INDENT_2)
         with open(save_path, "wb") as f:
-            strs = orjson.dumps(dict_data, option=orjson.OPT_INDENT_2)
             f.write(strs)
             # if save_memory:
             #     json.dump(dict_data, f, ensure_ascii=False)

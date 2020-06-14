@@ -30,7 +30,7 @@ class QA(object):
             ent1_name, rel1_name, rel2_name, ent2_name = path
             answer = self.graph_db.search_by_4path(ent1_name, rel1_name, rel2_name, ent2_name, direction=direction)
         else:
-            print('这个查询路径不规范')
+            logging.info(f'这个查询路径不规范: {path}')
             answer = []
         return answer
 
@@ -54,22 +54,22 @@ class QA(object):
             direction = 'in'
             top_path = top_in_path
         logging.info(f'* get_most_overlap_path: {top_path} ...')
-        answer = self.query_path(top_path, direction=direction)
-        if not answer and len(top_path) > 2:
+        result_ents = self.query_path(top_path, direction=direction)
+        if not result_ents and len(top_path) > 2:
             if direction == 'out':
                 top_path = top_path[:2]
             else:
                 top_path = top_path[-2:]
-            answer = self.query_path(top_path)
-            if not answer:
+            result_ents = self.query_path(top_path)
+            if not result_ents:
                 top_path = top_path[0] + top_path[-1]
-                answer = self.query_path(top_path)
-        logging.info(f"* cypher answer: {answer}" + '\n' + '--' * 10 + '\n\n')
+                result_ents = self.query_path(top_path, direction=direction)
+        logging.info(f"* cypher result_ents: {result_ents}" + '\n' + '--' * 10 + '\n\n')
         if return_candidates:
-            return answer, candidate_entities, candidate_out_paths, candidate_in_paths
-        return answer
+            return result_ents, candidate_entities, candidate_out_paths, candidate_in_paths
+        return result_ents
 
-    # def evaluate(self, question, subject_entities, answer_entities):
+    # def evaluate(self, question, subject_entities, result_ents_entities):
     #     q_text = question_patten.findall(question)[0]
     #     candidate_entities = self.recognizer.get_candidate_entities(q_text)
     #     precision, recall, f1 = get_metrics(subject_entities, candidate_entities)

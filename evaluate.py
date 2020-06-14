@@ -8,21 +8,21 @@ from ckbqa.utils.logger import logging_config
 from config import ResultSaver
 
 
-def train_answer_data():
+def train_data():
     logging_config('train_evaluate.log', stream_log=True)
-    from ckbqa.qa.evaluation_matrics import get_metrics
+    from ckbqa.models.evaluation_matrics import get_metrics
     #
     partten = re.compile(r'["<](.*?)[>"]')
     #
-    _paths = ResultSaver(new_path=False).train_result_csv
+    _paths = ResultSaver(find_exist_path=True).train_result_csv
     print(_paths)
     train_df = pd.read_csv(_paths[0])
     ceg_precisions, ceg_recalls, ceg_f1_scores = [], [], []
     answer_precisions, answer_recalls, answer_f1_scores = [], [], []
     for index, row in tqdm(train_df.iterrows(), total=train_df.shape[0], desc='evaluate '):
-        subject_entities = partten.findall(row['subject_entities'])  # 匹配文字
+        subject_entities = partten.findall(row['standard_subject_entities'])  # 匹配文字
         if not subject_entities:
-            subject_entities = eval(row['subject_entities'])
+            subject_entities = eval(row['standard_subject_entities'])
         # 修复之前把实体<>去掉造成的问题；问题解析时去掉，但预测时未去掉；
         # 所以需要匹配文字，不匹配 <>, ""
         # CEG  Candidate Entity Generation
@@ -32,7 +32,7 @@ def train_answer_data():
         ceg_recalls.append(recall)
         ceg_f1_scores.append(f1)
         # Answer
-        standard_entities = eval(row['answer_entities'])
+        standard_entities = eval(row['standard_answer_entities'])
         result_entities = eval(row['result_entities'])
         precision, recall, f1 = get_metrics(standard_entities, result_entities)
         answer_precisions.append(precision)
@@ -54,14 +54,14 @@ def train_answer_data():
     ave_answer_precision = sum(answer_precisions) / len(answer_precisions)
     ave_answer_recall = sum(answer_recalls) / len(answer_recalls)
     ave_answer_f1_score = sum(answer_f1_scores) / len(answer_f1_scores)
-    print(f"ave_answer_precision: {ave_answer_precision:.3f}, "
-          f"ave_answer_recall: {ave_answer_recall:.3f}, "
-          f"ave_answer_f1_score:{ave_answer_f1_score:.3f}")
+    print(f"ave_result_precision: {ave_answer_precision:.3f}, "
+          f"ave_result_recall: {ave_answer_recall:.3f}, "
+          f"ave_result_f1_score:{ave_answer_f1_score:.3f}")
 
 
 def ceg():
     logging_config('train_evaluate.log', stream_log=True)
-    from ckbqa.qa.evaluation_matrics import get_metrics
+    from ckbqa.models.evaluation_matrics import get_metrics
     from ckbqa.qa.el import CEG
     from ckbqa.dataset.data_prepare import load_data, question_patten, entity_pattern, attr_pattern  #
     ceg = CEG()  # Candidate Entity Generation
@@ -80,8 +80,6 @@ def ceg():
         ceg_precisions.append(precision)
         ceg_recalls.append(recall)
         ceg_f1_scores.append(f1)
-        #
-
         #
         data.append([q, q_entities, list(ent2mention.keys())])
         if recall == 0:
@@ -113,7 +111,7 @@ def main():
     group = parser.add_mutually_exclusive_group(required=True)  # 一组互斥参数,且至少需要互斥参数中的一个
 
     group.add_argument('--ceg', action="store_true", help="ceg Candidate Entity Generation评价")
-    group.add_argument('--train_answer_data', action="store_true", help="train_answer_data评价")
+    group.add_argument('--train_data', action="store_true", help="train_answer_data评价")
     # parse args
     args = parser.parse_args()
     #
@@ -121,8 +119,8 @@ def main():
     # ProcessManager().run()
     if args.ceg:
         ceg()
-    elif args.train_answer_data:
-        train_answer_data()
+    elif args.train_data:
+        train_data()
     elif args.task:
         task()
 
@@ -135,7 +133,7 @@ def task():
 if __name__ == '__main__':
     """
     example:
-        nohup  python qa.py --train_evaluate_data &>train_evaluate_data.out & 
+        nohup  python qa.py --train_data &>train_data.out & 
         nohup  python qa.py --ceg &>ceg.out & 
     """
     # from ckbqa.utils.tools import ProcessManager #实时查看内存占用情况
