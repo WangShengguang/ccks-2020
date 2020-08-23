@@ -6,6 +6,7 @@ import logging
 import os
 import re
 from collections import defaultdict, Counter
+from pathlib import Path
 
 import pandas as pd
 from tqdm import tqdm
@@ -20,7 +21,7 @@ def iter_triples(tqdm_prefix=''):
     ent_partten = re.compile('<(.*?)>')
     attr_partten = re.compile('"(.*?)"')
 
-    def get_entities(string):
+    def parse_entities(string):
         ents = ent_partten.findall(string)
         if ents:  # 加上括号，使用上面会去掉括号
             ents = [f'<{_ent.strip()}>' for _ent in ents if _ent]
@@ -29,19 +30,30 @@ def iter_triples(tqdm_prefix=''):
         return ents
 
     line_num = get_file_linenums(kb_triples_txt)
+    # f_record = open('fail.txt', 'w', encoding='utf-8')
     with open(kb_triples_txt, 'r', encoding='utf-8') as f:
-        for line in tqdm(f, total=line_num, desc=f'{tqdm_prefix} iter_triples'):
+        desc = Path(kb_triples_txt).name + '-' + 'iter_triples'
+        for line in tqdm(f, total=line_num, desc=desc):
+            # for idx, line in enumerate(f):
+            #     if idx < 6618182:
+            #         continue
             # 有些数据不以\t分割；有些数据连续两个<><>作为头实体；
             triples = line.rstrip('.\n').split('\t')
             if len(triples) != 3:
                 triples = line.rstrip('.\n').split()
             if len(triples) != 3:
                 triples = rdf_patten.findall(line)
+            if len(triples) == 6:
+                head_ent, rel, tail_ent = triples[:3]
+                yield parse_entities(head_ent)[0], parse_entities(rel)[0], parse_entities(tail_ent)[0]
+                head_ent, rel, tail_ent = triples[3:]
+                yield parse_entities(head_ent)[0], parse_entities(rel)[0], parse_entities(tail_ent)[0]
+                continue
             head_ent, rel, tail_ent = triples
             #
-            head_ents = get_entities(head_ent)
-            tail_ents = get_entities(tail_ent)
-            rels = get_entities(rel)
+            head_ents = parse_entities(head_ent)
+            tail_ents = parse_entities(tail_ent)
+            rels = parse_entities(rel)
             for head_ent in head_ents:
                 for rel in rels:
                     for tail_ent in tail_ents:

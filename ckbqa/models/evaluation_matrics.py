@@ -9,7 +9,10 @@ def get_metrics(real_entities, pred_entities):
     # TP+FP = real_entities_set
     # TP+FN = pred_entities_set
     precision = TP / len(pred_entities)
-    recall = TP / len(real_entities_set)
+    if TP:
+        recall = 1
+    else:
+        recall = TP / len(real_entities_set)
     if (precision + recall):
         f1 = 2 * precision * recall / (precision + recall)
     else:

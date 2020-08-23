@@ -88,8 +88,8 @@ def ceg():
             print(f"question: {q}\n"
                   f"subject_entities: {q_entities}, candidate_entities: {ent2mention}"
                   f"precision: {precision:.4f}, recall: {recall:.4f}, f1: {f1:.4f}\n\n")
-            import ipdb
-            ipdb.set_trace()
+            # import ipdb
+            # ipdb.set_trace()
             print('\n\n')
         # import time
         # time.sleep(2)

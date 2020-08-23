@@ -14,9 +14,9 @@ def create_db_tabels():
 
 def data_prepare():
     logging_config('data_prepare.log', stream_log=True)
-    from ckbqa.dataset.data_prepare import data2samples, fit_on_texts, data_convert
+    from ckbqa.dataset.data_prepare import fit_on_texts, data_convert
     # map_mention_entity()
-    data2samples(neg_rate=3)
+    # data2samples(neg_rate=3)
     data_convert()
     fit_on_texts()
     create_db_tabels()
@@ -24,15 +24,15 @@ def data_prepare():
 
 def kb_data_prepare():
     logging_config('kb_data_prepare.log', stream_log=True)
-    from ckbqa.dataset.kb_data_prepare import (create_lac_custom_dict, candidate_words, fit_triples)
+    from ckbqa.dataset.kb_data_prepare import (candidate_words, fit_triples)
     from ckbqa.dataset.kb_data_prepare import create_graph_csv
     fit_triples()  # 生成字典
     candidate_words()  # 属性
-    create_lac_custom_dict()  # 自定义分词词典
+    # create_lac_custom_dict()  # 自定义分词词典
 
     create_graph_csv()  # 生成数据库导入文件
-    from examples.lac_test import lac_model
-    lac_model()
+    # from examples.lac_test import lac_model
+    # lac_model()
 
 
 def main():

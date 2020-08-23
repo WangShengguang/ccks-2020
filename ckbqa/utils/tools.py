@@ -4,7 +4,6 @@ import os
 import pickle
 import platform
 import re
-import resource
 import sys
 import threading
 import time
@@ -23,17 +22,16 @@ def pkl_load(file_path: str):
     return obj
 
 
-def pkl_dump(obj: object, file_path: str, recursionlimit='default'):
-    limit = {'default': sys.getrecursionlimit(),
-             'common': 10 * 10000,
-             'max': resource.getrlimit(resource.RLIMIT_STACK)[0]
-             }
-    sys.setrecursionlimit(limit[recursionlimit])
+def pkl_dump(obj: object, file_path: str):
+    # limit = {'default': sys.getrecursionlimit(),
+    #          'common': 10 * 10000,
+    #          'max': resource.getrlimit(resource.RLIMIT_STACK)[0]
+    #          }
+    # sys.setrecursionlimit(limit[recursionlimit])
     with open(file_path, 'wb') as f:
         gc.disable()
         pickle.dump(obj, f)
         gc.enable()
-    sys.setrecursionlimit(limit['default'])
 
 
 def json_load(path):
@@ -59,7 +57,7 @@ def get_file_linenums(file_name):
         num_str = os.popen(f'wc -l {file_name}').read()
         line_num = int(re.findall('\d+', num_str)[0])
     else:  # Windows
-        line_num = sum([1 for _ in open(file_name)])
+        line_num = sum([1 for _ in open(file_name, encoding='utf-8')])
     return line_num
 
 

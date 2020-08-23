@@ -16,7 +16,7 @@ result_dir = os.path.join(output_dir, 'result')
 
 # 原始数据
 mention2ent_txt = os.path.join(raw_data_dir, 'PKUBASE', 'pkubase-mention2ent.txt')
-kb_triples_txt = os.path.join(raw_data_dir, 'PKUBASE', 'pkubase-complete.txt')
+kb_triples_txt = os.path.join(raw_data_dir, 'PKUBASE', 'pkubase-complete2.txt')
 # 问答原始数据
 raw_train_txt = os.path.join(raw_data_dir, 'ccks_2020_7_4_Data', 'task1-4_train_2020.txt')
 valid_question_txt = os.path.join(raw_data_dir, 'ccks_2020_7_4_Data', 'task1-4_valid_2020.questions')
