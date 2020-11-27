@@ -1,7 +1,7 @@
 from .db import DB
 from .db_tools import try_commit_rollback, try_commit_rollback_expunge
 from .sqlite_models import Entity2id, SubGraph
-from ..utils.tools import singleton
+from ..utils.decorators import singleton
 
 
 @singleton

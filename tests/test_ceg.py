@@ -11,10 +11,11 @@ def add_root_path():
 
 
 add_root_path()
-from ckbqa.dataset.data_prepare import load_data
-from ckbqa.models.recognizer import Recognizer
-from ckbqa.utils.logger import logging_config
 import logging
+
+from ckbqa.dataset.data_prepare import load_data
+from ckbqa.qa.el import EL
+from ckbqa.utils.logger import logging_config
 
 logging_config('test.log', stream_log=True)
 
@@ -22,10 +23,10 @@ logging_config('test.log', stream_log=True)
 def test_recgnizer():
     print('start')
     logging.info('test start ...')
-    recognizer = Recognizer()
+    el = EL()
     for q, sparql, a in load_data():
         q_text = q.split(':')[1]
-        rec_entities = recognizer.find_entities(q_text)
+        rec_entities = el.ceg.get_ent2mention(q_text)
         print(rec_entities)
         print(q)
         print(sparql)

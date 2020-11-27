@@ -134,7 +134,7 @@ CREATE INDEX ON :Relation(name)
 
 
 ### 4.1  主实体识别模块
-    Recognizer
+    EL
 
 
 ### 4.2 关系打分模块  
@@ -149,8 +149,8 @@ CREATE INDEX ON :Relation(name)
 ## Others
 
 - 本地端口映射后在本机访问远程图数据库  
-    ssh -f wangshengguang@119.3.178.138 -N -L 7474:localhost:7474
-    ssh -f wangshengguang@119.3.178.138 -N -L 7687:localhost:7687
+    ssh -f wangshengguang@remotehost -N -L 7474:localhost:7474
+    ssh -f wangshengguang@remotehost -N -L 7687:localhost:7687
 
     访问：[http://localhost:7474/browser/](http://localhost:7474/browser/)
 
@@ -160,4 +160,9 @@ CREATE INDEX ON :Relation(name)
 ](https://www.zhihu.com/question/266988943/answer/1154607853)
 - [linux下查看文件编码及修改编码](https://blog.csdn.net/jnbbwyth/article/details/6991425)
 
->>>>>>> wsg
+
+## 执行顺序 
+    1. 数据准备 data.py + neo4j 数据库安装及数据导入
+    2. 模型训练 manage.py
+    3. 组合以上模型得到问答结果 qa.py
+ 
